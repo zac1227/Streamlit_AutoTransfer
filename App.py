@@ -46,8 +46,7 @@ if df is not None:
                     st.success("✅ 報告產出成功，可直接下載。")
                 except PermissionError as e:
                     st.error(f"⚠️ 檔案處理失敗：{e}")
-    else:
-        st.warning("⚠️ 請上傳 Codebook 檔案（需含 Column 與 Type 欄位）")
+    
 
     st.markdown("---")
     st.caption("💡 註：若選擇『略過』，該欄位將不納入報告產出。")
