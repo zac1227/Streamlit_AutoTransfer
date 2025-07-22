@@ -85,9 +85,13 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
             table.cell(0, 3).text = var_name
 
             table.cell(1, 0).text = "平均數"
-            table.cell(1, 1).text = f"{desc['mean']:.3f}"
+            mean_val = df[col].mean()  # 自動略過 NaN
+            table.cell(1, 1).text = f"{mean_val:.3f}"
+            #table.cell(1, 1).text = f"{desc['mean']:.3f}"
             table.cell(1, 2).text = "標準差"
-            table.cell(1, 3).text = f"{desc['std']:.3f}"
+            std_val = df[col].std()  # 自動略過 NaN
+            table.cell(1, 3).text = f"{std_val:.3f}"
+            #table.cell(1, 3).text = f"{desc['std']:.3f}"
 
             table.cell(2, 0).text = "最大值"
             table.cell(2, 1).text = f"{desc['max']:.3f}"
