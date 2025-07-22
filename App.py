@@ -63,7 +63,8 @@ if uploaded_file is not None:
     category_definitions = {}
 
     type_options = ["連續型", "類別型", "時間型", "略過"]
-
+    st.markdown("---")
+    st.subheader("📤 報告產出")
     for col in df.columns:
         with st.container():
             st.markdown(f"**欄位：{col}**")
@@ -106,8 +107,7 @@ if uploaded_file is not None:
                     st.info("類別數過多，略過定義填寫。")
 
 
-    st.markdown("---")
-    st.subheader("📤 報告產出")
+    
 
     if st.button("🚀 產出 Codebook"):
         with st.spinner("產生中..."):
