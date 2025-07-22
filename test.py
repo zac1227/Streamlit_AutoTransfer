@@ -1,5 +1,3 @@
-# Test.py
-
 from docx import Document
 from docx.shared import Inches
 import matplotlib.pyplot as plt
@@ -7,12 +5,14 @@ import pandas as pd
 import tempfile
 import os
 
-
 def generate_codebook(df, column_types, variable_names, category_definitions, output_path="codebook.docx", preview_mode=False):
+    if output_path is None:
+        output_path = "codebook.docx"
+
     doc = Document()
     doc.add_heading("Codebook 統計摘要報告", level=1)
     df = df.dropna(how='all')  # 移除全為 NaN 的行
-    print("df.columns =", list(df.columns))
+
     for col in df.columns:
         if col not in column_types:
             continue
@@ -23,7 +23,8 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
         var_name = variable_names.get(col, col)
         doc.add_heading(f"變數：{col}（{var_name}）", level=2)
 
-        if type_code == 2:  # 類別型
+        # 🟦 類別型欄位
+        if type_code == 2:
             value_counts = df[col].value_counts(dropna=False)
             total = len(df)
             defs = category_definitions.get(col, {})
@@ -55,6 +56,7 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
             table.cell(3, 2).text = percents[1] if len(percents) > 1 else ""
             table.cell(3, 3).text = "圖片"
 
+            # 圖表
             fig, ax = plt.subplots()
             value_counts.sort_index().plot(kind="bar", color="cornflowerblue", ax=ax)
             ax.set_title(f"Count Plot of {col}")
@@ -68,9 +70,10 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
             except PermissionError:
                 pass
 
-        elif type_code == 1:  # 連續型
+        # 🟩 連續型欄位
+        elif type_code == 1:
             try:
-                df[col] = pd.to_numeric(df[col], errors="coerce")  # 強制轉為數值
+                df[col] = pd.to_numeric(df[col], errors="coerce")
             except Exception as e:
                 print(f"❌ 欄位 {col} 強制轉數值失敗：{e}")
                 continue
@@ -126,4 +129,5 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
             except PermissionError:
                 pass
 
-
+    doc.save(output_path)
+    return output_path
