@@ -12,9 +12,9 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
     # ✅ 首頁摘要統計區塊
     try:
         total_rows, total_cols = df.shape
-        doc.add_paragraph(f"總筆數 - 資料列數{total_rows}")
-        doc.add_paragraph(f"欄位數 - 變數數量{total_cols}")
-        doc.add_paragraph("欄位缺失值統計（僅顯示有缺失的欄位）")
+        doc.add_paragraph("總筆數 - 資料列數: " + str(total_rows))
+        doc.add_paragraph("欄位數 - 變數數量: " + str(total_cols))
+        doc.add_paragraph("欄位缺失值統計（僅顯示有缺失的欄位）:")
 
         na_series = df.isnull().sum()
         na_table = doc.add_table(rows=1, cols=3)
