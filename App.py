@@ -1,11 +1,17 @@
 import streamlit as st
 import pandas as pd
+<<<<<<< Updated upstream
 from test import generate_codebook
 import base64, os
+=======
+from codebook_generator import generate_codebook
+import os
+import io
+>>>>>>> Stashed changes
 
-st.set_page_config(page_title="Codebook 產生器", layout="wide")
-st.title("📄 自動化 Codebook 產生工具")
+st.title("📘 Codebook 產生器")
 
+<<<<<<< Updated upstream
 uploaded_file = st.file_uploader("請上傳資料檔（CSV 或 Excel）", type=["csv", "xlsx"])
 meta_file = st.file_uploader("請上傳欄位型別設定（code.csv）", type=["csv"])
 
@@ -34,3 +40,37 @@ if uploaded_file and meta_file:
                 st.success("✅ 報告產出成功")
     except Exception as e:
         st.error(f"串流執行時發生錯誤：{e}")
+=======
+# 上傳資料表
+data_file = st.file_uploader("請上傳主資料表（CSV）", type=["csv"])
+code_file = st.file_uploader("請上傳變數類型定義檔（code.csv）", type=["csv"])
+
+if data_file and code_file:
+    # 載入成暫存檔（避免 winerror 32）
+    data_bytes = data_file.read()
+    code_bytes = code_file.read()
+
+    with open("temp_data.csv", "wb") as f:
+        f.write(data_bytes)
+    with open("temp_code.csv", "wb") as f:
+        f.write(code_bytes)
+
+    if st.button("📊 產生 Codebook"):
+        output_path = "codebook.docx"
+        with st.spinner("正在產生報告..."):
+            generate_codebook("temp_data.csv", "temp_code.csv", output_path)
+        st.success("✅ 完成！以下為下載連結：")
+
+        with open(output_path, "rb") as f:
+            st.download_button(
+                label="📥 下載 Word 報告",
+                data=f,
+                file_name="codebook.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
+
+        # 清理暫存
+        os.remove("temp_data.csv")
+        os.remove("temp_code.csv")
+        os.remove("codebook.docx")
+>>>>>>> Stashed changes
