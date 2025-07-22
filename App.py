@@ -80,46 +80,7 @@ if uploaded_file is not None:
             except PermissionError as e:
                 st.error(f"⚠️ 檔案處理失敗：{e}")
     st.subheader("🧠 自動判斷欄位型別（可修改）")
-    for col in df.columns:
-        with st.container():
-            st.markdown(f"**欄位：{col}**")
-            col1, col2 = st.columns(2)
-            with col1:
-                # 自動猜測欄位型別，若使用者有提供 meta 資訊則覆蓋
-                if col in user_defined_types:
-                    guess = user_defined_types[col]
-                elif pd.api.types.is_datetime64_any_dtype(df[col]):
-                    guess = "時間型"
-                elif pd.api.types.is_numeric_dtype(df[col]):
-                    guess = "連續型"
-                elif df[col].nunique() < 10:
-                    guess = "類別型"
-                else:
-                    guess = "略過"
-
-                # 如果 guess 不在 type_options，就設為 "略過"
-                if guess not in type_options:
-                    guess = "略過"
-
-                column_types[col] = st.selectbox(
-                    "變數型別", type_options, index=type_options.index(guess), key=f"type_{col}"
-)
-
-
-                st.markdown(f"📌 缺失值：{df[col].isnull().sum()} 筆")
-
-            with col2:
-                variable_names[col] = st.text_input("變數名稱（選填）", value=col, key=f"name_{col}")
-
-            if column_types[col] == "類別型":
-                if df[col].nunique() <= 20:
-                    unique_vals = df[col].dropna().unique()
-                    defs = {}
-                    for val in unique_vals:
-                        defs[val] = st.text_input(f"定義：{val}", key=f"def_{col}_{val}")
-                    category_definitions[col] = defs
-                else:
-                    st.info("類別數過多，略過定義填寫。")
+    
 
 
     
