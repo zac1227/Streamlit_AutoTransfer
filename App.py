@@ -37,8 +37,6 @@ if uploaded_codebook:
     code_df = read_uploaded_csv(uploaded_codebook)
     if code_df is not None:
         st.success(f"✅ 成功讀取 Codebook，共定義 {len(code_df)} 欄位。")
-        with st.expander("📋 預覽 Codebook"):
-            st.dataframe(code_df)
 
 # ---------- 🧠 資料處理 ----------
 st.markdown("---")
