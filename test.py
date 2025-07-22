@@ -13,7 +13,9 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
 
     # 各欄位統計
     for col in column_types:
-        if col not in df.columns or column_types[col] == "略過":
+        if col not in df.columns:
+            continue
+        if column_types.get(col) == "略過":
             continue
 
         var_name = variable_names.get(col, col)
