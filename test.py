@@ -13,53 +13,47 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
     doc.add_heading("Codebook 統計摘要報告", level=1)
 
     for col in df.columns:
-        if column_types[col] == "略過":
+        if col not in column_types:
+            continue
+        type_code = column_types[col]
+        if type_code == 0:
             continue
 
         var_name = variable_names.get(col, col)
         doc.add_heading(f"變數：{col}（{var_name}）", level=2)
 
-        if column_types[col] == "類別型":
-            # 取得統計資訊
+        if type_code == 2:  # 類別型
             value_counts = df[col].value_counts(dropna=False)
             total = len(df)
             defs = category_definitions.get(col, {})
 
-            # 整理表格資料
             categories = list(value_counts.index)
-            counts = [value_counts[k] for k in categories]
             percents = [f"{value_counts[k]} ({value_counts[k]/total:.2%})" for k in categories]
             cat_labels = [str(k) for k in categories]
             def_labels = [defs.get(k, "") for k in categories]
 
             table = doc.add_table(rows=4, cols=4)
             table.style = "Table Grid"
-
-            # 第一列：變數編號、變數名稱
             table.cell(0, 0).text = "變數編號"
             table.cell(0, 1).text = col
             table.cell(0, 2).text = "變數名稱"
             table.cell(0, 3).text = var_name
 
-            # 第二列：變數類別 + 定義
             table.cell(1, 0).text = "變數類別"
             table.cell(1, 1).text = cat_labels[0] if len(cat_labels) > 0 else ""
             table.cell(1, 2).text = cat_labels[1] if len(cat_labels) > 1 else ""
             table.cell(1, 3).text = "變數定義"
 
-            # 第三列：定義文字
             table.cell(2, 0).text = ""
             table.cell(2, 1).text = def_labels[0] if len(def_labels) > 0 else ""
             table.cell(2, 2).text = def_labels[1] if len(def_labels) > 1 else ""
             table.cell(2, 3).text = ""
 
-            # 第四列：數量與比例
             table.cell(3, 0).text = "數量與比例"
             table.cell(3, 1).text = percents[0] if len(percents) > 0 else ""
             table.cell(3, 2).text = percents[1] if len(percents) > 1 else ""
             table.cell(3, 3).text = "圖片"
 
-            # 插入圖片
             fig, ax = plt.subplots()
             value_counts.sort_index().plot(kind="bar", color="cornflowerblue", ax=ax)
             ax.set_title(f"Count Plot of {col}")
@@ -73,10 +67,9 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
             except PermissionError:
                 pass
 
-        elif column_types[col] == "連續型":
+        elif type_code == 1:  # 連續型
             desc = df[col].describe()
 
-            # 建立統計表格
             table = doc.add_table(rows=3, cols=4)
             table.style = "Table Grid"
             table.cell(0, 0).text = "變數編號"
@@ -94,7 +87,6 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
             table.cell(2, 2).text = "最小值"
             table.cell(2, 3).text = f"{desc['min']:.3f}"
 
-            # 圖片：histogram
             fig, ax = plt.subplots()
             df[col].plot(kind="hist", bins=10, color="skyblue", edgecolor="black", ax=ax)
             ax.set_title(f"Histogram of {col}")
@@ -108,7 +100,6 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
             except PermissionError:
                 pass
 
-            # 圖片：boxplot
             fig2, ax2 = plt.subplots()
             df.boxplot(column=col, ax=ax2)
             ax2.set_title(f"Boxplot of {col}")
@@ -124,3 +115,4 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
 
     doc.save(output_path)
     return output_path
+
