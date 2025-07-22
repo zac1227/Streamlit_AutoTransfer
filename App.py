@@ -12,7 +12,9 @@ st.title("📄 自動化 Codebook 產生工具")
 uploaded_maindata = st.file_uploader("請上傳 CSV 檔案", type=["csv"])
 uploaded_codebook = st.file_uploader("請上傳 Codebook 檔案（選填，需含 Column 與 Type 欄位）", type=["csv"])
 
-df = pd.read_csv(uploaded_maindata)  # 如果是 utf-8
+if uploaded_maindata is not None:
+    df = pd.read_csv(uploaded_maindata)  # 或你的安全讀取函數
+    st.dataframe(df.head())
 
 code_df = pd.read_csv(uploaded_codebook) if uploaded_codebook else None
 
