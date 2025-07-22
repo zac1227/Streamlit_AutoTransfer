@@ -11,7 +11,7 @@ import os
 def generate_codebook(df, column_types, variable_names, category_definitions, output_path="codebook.docx", preview_mode=False):
     doc = Document()
     doc.add_heading("Codebook 統計摘要報告", level=1)
-
+    df = df.dropna(how='all')  # 移除全為 NaN 的行
     for col in df.columns:
         if col not in column_types:
             continue
