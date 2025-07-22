@@ -18,7 +18,7 @@ if uploaded_maindata is not None:
 
 code_df = pd.read_csv(uploaded_codebook) if uploaded_codebook else None
 
-if df is not None:
+if df:
     st.success(f"成功讀取檔案，共 {df.shape[0]} 筆資料，{df.shape[1]} 欄位。")
 
     with st.expander("🔍 預覽資料"):
