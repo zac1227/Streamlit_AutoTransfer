@@ -2,19 +2,19 @@ import streamlit as st
 import pandas as pd
 from test import generate_codebook
 import os
-import io
+import traceback
 
-st.title("📘 Codebook 產生器")
+st.set_page_config(page_title="Codebook 產生器", layout="wide")
+st.title("📘 Codebook 自動產生工具")
 
-# 上傳資料表
+# 上傳檔案
 data_file = st.file_uploader("請上傳主資料表（CSV）", type=["csv"])
 code_file = st.file_uploader("請上傳變數類型定義檔（code.csv）", type=["csv"])
 
 if data_file and code_file:
-    # 載入成暫存檔（避免 winerror 32）
+    # 讀取並儲存暫存檔
     data_bytes = data_file.read()
     code_bytes = code_file.read()
-
     with open("temp_data.csv", "wb") as f:
         f.write(data_bytes)
     with open("temp_code.csv", "wb") as f:
@@ -34,6 +34,13 @@ if data_file and code_file:
                         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     )
             except Exception as e:
-                import traceback
-                st.error("⚠️ 發生錯誤，以下是詳細訊息：")
+                st.error("⚠️ 發生錯誤，以下為詳細訊息：")
                 st.code(traceback.format_exc())
+
+        # 清除暫存檔
+        try:
+            os.remove("temp_data.csv")
+            os.remove("temp_code.csv")
+            os.remove("codebook.docx")
+        except:
+            pass
