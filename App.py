@@ -19,6 +19,23 @@ if uploaded_file is not None:
         df = pd.read_excel(uploaded_file)
 
     st.success(f"成功讀取檔案，共 {df.shape[0]} 筆資料，{df.shape[1]} 欄位。")
+        # 第二個檔案上傳：類型定義
+    st.subheader("📑 匯入欄位型別設定（選填）")
+    uploaded_meta = st.file_uploader("請上傳欄位型別設定檔（CSV 或 Excel）", type=["csv", "xlsx"], key="meta")
+
+    user_defined_types = {}
+    if uploaded_meta is not None:
+        if uploaded_meta.name.endswith(".csv"):
+            meta_df = pd.read_csv(uploaded_meta)
+        else:
+            meta_df = pd.read_excel(uploaded_meta)
+
+        if "欄位名稱" in meta_df.columns and "變數型別" in meta_df.columns:
+            user_defined_types = dict(zip(meta_df["欄位名稱"], meta_df["變數型別"]))
+            st.success("✅ 成功載入欄位型別設定")
+        else:
+            st.error("❌ 上傳的檔案中需包含『欄位名稱』與『變數型別』兩欄")
+
 
     with st.expander("🔍 預覽資料"):
         st.dataframe(df.head())
@@ -35,8 +52,10 @@ if uploaded_file is not None:
             st.markdown(f"**欄位：{col}**")
             col1, col2 = st.columns(2)
             with col1:
-                # 判斷邏輯加強：
-                if pd.api.types.is_datetime64_any_dtype(df[col]):
+                # 自動猜測欄位型別，若使用者有提供 meta 資訊則覆蓋
+                if col in user_defined_types:
+                    guess = user_defined_types[col]
+                elif pd.api.types.is_datetime64_any_dtype(df[col]):
                     guess = "時間型"
                 elif pd.api.types.is_numeric_dtype(df[col]):
                     guess = "連續型"
@@ -48,6 +67,9 @@ if uploaded_file is not None:
                 column_types[col] = st.selectbox(
                     "變數型別", type_options, index=type_options.index(guess), key=f"type_{col}"
                 )
+
+                st.markdown(f"📌 缺失值：{df[col].isnull().sum()} 筆")
+
             with col2:
                 variable_names[col] = st.text_input("變數名稱（選填）", value=col, key=f"name_{col}")
 
@@ -60,6 +82,7 @@ if uploaded_file is not None:
                     category_definitions[col] = defs
                 else:
                     st.info("類別數過多，略過定義填寫。")
+
 
     st.markdown("---")
     st.subheader("📤 報告產出")
