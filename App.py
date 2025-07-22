@@ -65,6 +65,20 @@ if uploaded_file is not None:
     type_options = ["連續型", "類別型", "時間型", "略過"]
     st.markdown("---")
     st.subheader("📤 報告產出")
+    if st.button("🚀 產出 Codebook"):
+        with st.spinner("產生中..."):
+            try:
+                output_path = generate_codebook(df, column_types, variable_names, category_definitions)
+                with open(output_path, "rb") as f:
+                    file_data = f.read()
+                    b64 = base64.b64encode(file_data).decode()
+                    href = f'<a href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{b64}" download="{os.path.basename(output_path)}">📥 點我下載 Codebook 報告 (Word)</a>'
+                    st.markdown(href, unsafe_allow_html=True)
+
+                st.success("✅ 報告產出成功，可直接下載。")
+                
+            except PermissionError as e:
+                st.error(f"⚠️ 檔案處理失敗：{e}")
     for col in df.columns:
         with st.container():
             st.markdown(f"**欄位：{col}**")
@@ -109,20 +123,7 @@ if uploaded_file is not None:
 
     
 
-    if st.button("🚀 產出 Codebook"):
-        with st.spinner("產生中..."):
-            try:
-                output_path = generate_codebook(df, column_types, variable_names, category_definitions)
-                with open(output_path, "rb") as f:
-                    file_data = f.read()
-                    b64 = base64.b64encode(file_data).decode()
-                    href = f'<a href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{b64}" download="{os.path.basename(output_path)}">📥 點我下載 Codebook 報告 (Word)</a>'
-                    st.markdown(href, unsafe_allow_html=True)
-
-                st.success("✅ 報告產出成功，可直接下載。")
-                
-            except PermissionError as e:
-                st.error(f"⚠️ 檔案處理失敗：{e}")
+    
 
     st.markdown("---")
     st.caption("💡 註：若選擇『略過』，該欄位將不納入報告產出。")
