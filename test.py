@@ -74,7 +74,15 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
                 pass
 
         elif column_types[col] == "連續型":
-            desc = df[col].describe()
+            # 防呆：確認欄位存在，且為數值型
+            if col not in df.columns or not pd.api.types.is_numeric_dtype(df[col]):
+                continue
+
+            # 計算統計值（自動忽略 NaN）
+            mean_val = df[col].mean()
+            std_val = df[col].std()
+            min_val = df[col].min()
+            max_val = df[col].max()
 
             # 建立統計表格
             table = doc.add_table(rows=3, cols=4)
@@ -85,46 +93,44 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
             table.cell(0, 3).text = var_name
 
             table.cell(1, 0).text = "平均數"
-            mean_val = df[col].mean()  # 自動略過 NaN
-            table.cell(1, 1).text = f"{mean_val:.3f}"
-            #table.cell(1, 1).text = f"{desc['mean']:.3f}"
+            table.cell(1, 1).text = f"{mean_val:.3f}" if not pd.isna(mean_val) else ""
             table.cell(1, 2).text = "標準差"
-            std_val = df[col].std()  # 自動略過 NaN
-            table.cell(1, 3).text = f"{std_val:.3f}"
-            #table.cell(1, 3).text = f"{desc['std']:.3f}"
+            table.cell(1, 3).text = f"{std_val:.3f}" if not pd.isna(std_val) else ""
 
             table.cell(2, 0).text = "最大值"
-            table.cell(2, 1).text = f"{desc['max']:.3f}"
+            table.cell(2, 1).text = f"{max_val:.3f}" if not pd.isna(max_val) else ""
             table.cell(2, 2).text = "最小值"
-            table.cell(2, 3).text = f"{desc['min']:.3f}"
+            table.cell(2, 3).text = f"{min_val:.3f}" if not pd.isna(min_val) else ""
 
-            # 圖片：histogram
-            fig, ax = plt.subplots()
-            df[col].plot(kind="hist", bins=10, color="skyblue", edgecolor="black", ax=ax)
-            ax.set_title(f"Histogram of {col}")
-            tmp1 = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-            plt.tight_layout()
-            plt.savefig(tmp1.name)
-            plt.close("all")
-            doc.add_picture(tmp1.name, width=Inches(4.5))
-            try:
-                os.unlink(tmp1.name)
-            except PermissionError:
-                pass
+            # 繪製 Histogram（若非空欄）
+            if df[col].dropna().shape[0] > 0:
+                fig, ax = plt.subplots()
+                df[col].plot(kind="hist", bins=10, color="skyblue", edgecolor="black", ax=ax)
+                ax.set_title(f"Histogram of {col}")
+                tmp1 = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+                plt.tight_layout()
+                plt.savefig(tmp1.name)
+                plt.close("all")
+                doc.add_picture(tmp1.name, width=Inches(4.5))
+                try:
+                    os.unlink(tmp1.name)
+                except PermissionError:
+                    pass
 
-            # 圖片：boxplot
-            fig2, ax2 = plt.subplots()
-            df.boxplot(column=col, ax=ax2)
-            ax2.set_title(f"Boxplot of {col}")
-            tmp2 = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-            plt.tight_layout()
-            plt.savefig(tmp2.name)
-            plt.close("all")
-            doc.add_picture(tmp2.name, width=Inches(4.5))
-            try:
-                os.unlink(tmp2.name)
-            except PermissionError:
-                pass
+                # 繪製 Boxplot
+                fig2, ax2 = plt.subplots()
+                df.boxplot(column=col, ax=ax2)
+                ax2.set_title(f"Boxplot of {col}")
+                tmp2 = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+                plt.tight_layout()
+                plt.savefig(tmp2.name)
+                plt.close("all")
+                doc.add_picture(tmp2.name, width=Inches(4.5))
+                try:
+                    os.unlink(tmp2.name)
+                except PermissionError:
+                    pass
+
 
     doc.save(output_path)
     return output_path
