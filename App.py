@@ -2,7 +2,7 @@
 
 import streamlit as st
 import pandas as pd
-from Test import generate_codebook
+from test import generate_codebook
 import base64
 import os
 
