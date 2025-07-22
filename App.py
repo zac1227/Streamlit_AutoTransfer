@@ -30,11 +30,27 @@ if uploaded_file is not None:
         else:
             meta_df = pd.read_excel(uploaded_meta)
 
-        if "Column" in meta_df.columns and "Type" in meta_df.columns:
-            user_defined_types = dict(zip(meta_df["Column"], meta_df["Type"]))
-            st.success("✅ 成功載入欄位型別設定")
-        else:
-            st.error("❌ 上傳的檔案中需包含『欄位名稱』與『變數型別』兩欄")
+    if "Column" in meta_df.columns and "Type" in meta_df.columns:
+        # 加入 0/1/2 對應的中文型別
+        type_mapping = {
+            0: "略過",
+            1: "連續型",
+            2: "類別型",
+            "0": "略過",
+            "1": "連續型",
+            "2": "類別型"
+        }
+
+        # 將 Type 欄轉換為文字標籤（例如 "連續型"）
+        meta_df["Type"] = meta_df["Type"].map(type_mapping).fillna("略過")
+
+        # 建立對應字典：{欄位名稱: 類型}
+        user_defined_types = dict(zip(meta_df["Column"], meta_df["Type"]))
+
+        st.success("✅ 成功載入欄位型別設定")
+    else:
+        st.error("❌ 上傳的檔案中需包含 'Column' 與 'Type' 兩欄")
+
 
 
     with st.expander("🔍 預覽資料"):
@@ -59,14 +75,19 @@ if uploaded_file is not None:
                     guess = "時間型"
                 elif pd.api.types.is_numeric_dtype(df[col]):
                     guess = "連續型"
-                elif df[col].nunique() < 20:
+                elif df[col].nunique() < 10:
                     guess = "類別型"
                 else:
                     guess = "略過"
 
+                # 如果 guess 不在 type_options，就設為 "略過"
+                if guess not in type_options:
+                    guess = "略過"
+
                 column_types[col] = st.selectbox(
                     "變數型別", type_options, index=type_options.index(guess), key=f"type_{col}"
-                )
+)
+
 
                 st.markdown(f"📌 缺失值：{df[col].isnull().sum()} 筆")
 
