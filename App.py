@@ -1,38 +1,37 @@
 import streamlit as st
 import pandas as pd
-from test import generate_codebook  # 你自己的函數檔案
+from test import generate_codebook
+import base64
 import os
 
-st.title("📊 Codebook 統計摘要產生器")
+st.set_page_config(page_title="Codebook 產生器", layout="wide")
+st.title("📄 自動化 Codebook 產生工具")
 
-# 上傳資料與欄位說明
-uploaded_data = st.file_uploader("📎 請上傳主資料（data.csv）", type=["csv"])
-uploaded_meta = st.file_uploader("📎 請上傳變數說明（code.csv）", type=["csv"])
+uploaded_file = st.file_uploader("請上傳資料檔案（CSV 或 Excel）", type=["csv", "xlsx"])
+meta_file = st.file_uploader("請上傳欄位型別設定檔（code.csv）", type=["csv"])
 
-if uploaded_data and uploaded_meta:
-    try:
-        # 讀取主資料與變數定義
-        df = pd.read_csv(uploaded_data)
-        meta_df = pd.read_csv(uploaded_meta)
+if uploaded_file is not None and meta_file is not None:
+    # 讀取資料
+    df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith(".csv") else pd.read_excel(uploaded_file)
+    meta_df = pd.read_csv(meta_file)
 
-        # 建立 type 對應表
-        type_map = {0: "略過", 1: "連續型", 2: "類別型"}
-        column_types = {row["colname"]: type_map.get(row["type"], "略過") for _, row in meta_df.iterrows()}
-        variable_names = {row["colname"]: row["variable_name"] for _, row in meta_df.iterrows()}
-        category_definitions = {}  # 若無額外定義可留空
+    # 解析型別設定
+    type_mapping = {"0": "略過", "1": "連續型", "2": "類別型"}
+    column_types = {row["colname"]: type_mapping.get(str(row["type"]), "略過") for _, row in meta_df.iterrows()}
+    variable_names = {col: col for col in df.columns}  # 無 label，因此使用原欄位名稱
+    category_definitions = {}  # 不提供定義
 
-        # 顯示簡易預覽
-        st.success("✅ 檔案上傳成功！以下是欄位資訊預覽：")
-        st.dataframe(meta_df)
+    st.success(f"成功讀取資料，共 {df.shape[0]} 筆資料、{df.shape[1]} 欄位。")
 
-        # 產生報告
-        if st.button("📄 產生 Codebook"):
-            output_path = generate_codebook(df, column_types, variable_names, category_definitions)
-            st.success("📘 Codebook 產生成功！")
-
-            # 提供下載
-            with open(output_path, "rb") as f:
-                st.download_button("⬇️ 下載報告", f, file_name="codebook.docx")
-
-    except Exception as e:
-        st.error(f"❌ 發生錯誤：{e}")
+    # 產出報告
+    if st.button("🚀 產出 Codebook"):
+        with st.spinner("產生中..."):
+            try:
+                output_path = generate_codebook(df, column_types, variable_names, category_definitions)
+                with open(output_path, "rb") as f:
+                    b64 = base64.b64encode(f.read()).decode()
+                    href = f'<a href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{b64}" download="{os.path.basename(output_path)}">📥 點我下載 Codebook 報告 (Word)</a>'
+                    st.markdown(href, unsafe_allow_html=True)
+                st.success("✅ 報告產出成功")
+            except Exception as e:
+                st.error(f"發生錯誤：{e}")
