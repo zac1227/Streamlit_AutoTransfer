@@ -59,7 +59,8 @@ def generate_codebook(df, column_types, output_path="codebook.docx"):
             table = doc.add_table(rows=3, cols=4)
             table.style = "Table Grid"
             table.cell(0, 0).text = "平均數"
-            table.cell(0, 1).text = f"{mean_val:.3f}" if pd.notna(mean_val) else ""
+            
+            #table.cell(0, 1).text = f"{mean_val:.3f}" if pd.notna(mean_val) else ""
             table.cell(0, 2).text = "標準差"
             table.cell(0, 3).text = f"{std_val:.3f}" if pd.notna(std_val) else ""
             table.cell(1, 0).text = "最大值"
