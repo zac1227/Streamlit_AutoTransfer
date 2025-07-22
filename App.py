@@ -31,7 +31,7 @@ if uploaded_file is not None:
             meta_df = pd.read_excel(uploaded_meta)
 
         if "欄位名稱" in meta_df.columns and "變數型別" in meta_df.columns:
-            user_defined_types = dict(zip(meta_df["欄位名稱"], meta_df["變數型別"]))
+            user_defined_types = dict(zip(meta_df["Column"], meta_df["Type"]))
             st.success("✅ 成功載入欄位型別設定")
         else:
             st.error("❌ 上傳的檔案中需包含『欄位名稱』與『變數型別』兩欄")
