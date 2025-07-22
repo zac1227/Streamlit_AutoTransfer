@@ -10,8 +10,8 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
         output_path = "codebook.docx"
 
     doc = Document()
-    doc.add_heading("Codebook 統計摘要報告", level=1)
-    df = df.dropna(how='all')  # 移除全為 NaN 的行
+    doc.add_heading("Codebook Summary Report", level=1)
+    df = df.dropna(how='all')  # Remove rows with all NaNs
 
     for col in df.columns:
         if col not in column_types:
@@ -21,42 +21,32 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
             continue
 
         var_name = variable_names.get(col, col)
-        doc.add_heading(f"變數：{col}（{var_name}）", level=2)
+        doc.add_heading(f"Variable: {col} ({var_name})", level=2)
 
-        # 🟦 類別型欄位
+        # 🟦 Categorical Variable
         if type_code == 2:
             value_counts = df[col].value_counts(dropna=False)
             total = len(df)
             defs = category_definitions.get(col, {})
 
-            categories = list(value_counts.index)
-            percents = [f"{value_counts[k]} ({value_counts[k]/total:.2%})" for k in categories]
-            cat_labels = [str(k) for k in categories]
-            def_labels = [defs.get(k, "") for k in categories]
+            lines = []
+            for k in value_counts.index:
+                count = value_counts[k]
+                percent = f"{count / total:.2%}"
+                label = defs.get(k, "")
+                lines.append(f"{k}: {label} → {count} ({percent})")
 
-            table = doc.add_table(rows=4, cols=4)
+            summary_text = "\n".join(lines)
+
+            table = doc.add_table(rows=2, cols=2)
             table.style = "Table Grid"
-            table.cell(0, 0).text = "變數編號"
-            table.cell(0, 1).text = col
-            table.cell(0, 2).text = "變數名稱"
-            table.cell(0, 3).text = var_name
+            table.cell(0, 0).text = "Variable Name"
+            table.cell(0, 1).text = f"{col} ({var_name})"
 
-            table.cell(1, 0).text = "變數類別"
-            table.cell(1, 1).text = cat_labels[0] if len(cat_labels) > 0 else ""
-            table.cell(1, 2).text = cat_labels[1] if len(cat_labels) > 1 else ""
-            table.cell(1, 3).text = "變數定義"
+            table.cell(1, 0).text = "Categories Summary"
+            table.cell(1, 1).text = summary_text
 
-            table.cell(2, 0).text = ""
-            table.cell(2, 1).text = def_labels[0] if len(def_labels) > 0 else ""
-            table.cell(2, 2).text = def_labels[1] if len(def_labels) > 1 else ""
-            table.cell(2, 3).text = ""
-
-            table.cell(3, 0).text = "數量與比例"
-            table.cell(3, 1).text = percents[0] if len(percents) > 0 else ""
-            table.cell(3, 2).text = percents[1] if len(percents) > 1 else ""
-            table.cell(3, 3).text = "圖片"
-
-            # 圖表
+            # Bar chart
             fig, ax = plt.subplots()
             value_counts.sort_index().plot(kind="bar", color="cornflowerblue", ax=ax)
             ax.set_title(f"Count Plot of {col}")
@@ -70,36 +60,41 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
             except PermissionError:
                 pass
 
-        # 🟩 連續型欄位
+        # 🟩 Continuous Variable
         elif type_code == 1:
             try:
                 df[col] = pd.to_numeric(df[col], errors="coerce")
             except Exception as e:
-                print(f"❌ 欄位 {col} 強制轉數值失敗：{e}")
+                print(f"❌ Failed to convert {col} to numeric: {e}")
                 continue
 
             if df[col].dropna().empty:
-                print(f"⚠️ 欄位 {col} 無有效數值（全為 NaN），略過")
+                print(f"⚠️ Column {col} contains only NaN. Skipping.")
                 continue
 
             desc = df[col].describe()
 
-            table = doc.add_table(rows=3, cols=4)
+            table = doc.add_table(rows=4, cols=4)
             table.style = "Table Grid"
-            table.cell(0, 0).text = "變數編號"
+            table.cell(0, 0).text = "Index"
             table.cell(0, 1).text = col
-            table.cell(0, 2).text = "變數名稱"
+            table.cell(0, 2).text = "Variable Name"
             table.cell(0, 3).text = var_name
 
-            table.cell(1, 0).text = "平均數"
+            table.cell(1, 0).text = "Mean"
             table.cell(1, 1).text = f"{desc['mean']:.3f}"
-            table.cell(1, 2).text = "標準差"
+            table.cell(1, 2).text = "Std Dev"
             table.cell(1, 3).text = f"{desc['std']:.3f}"
 
-            table.cell(2, 0).text = "最大值"
+            table.cell(2, 0).text = "Max"
             table.cell(2, 1).text = f"{desc['max']:.3f}"
-            table.cell(2, 2).text = "最小值"
+            table.cell(2, 2).text = "Min"
             table.cell(2, 3).text = f"{desc['min']:.3f}"
+
+            table.cell(3, 0).text = "Q1 (25%)"
+            table.cell(3, 1).text = f"{desc['25%']:.3f}"
+            table.cell(3, 2).text = "Q3 (75%)"
+            table.cell(3, 3).text = f"{desc['75%']:.3f}"
 
             # Histogram
             fig, ax = plt.subplots()
