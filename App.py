@@ -51,7 +51,10 @@ if df is not None and code_df is not None:
     if st.button("🚀 產出 Codebook 報告"):
         with st.spinner("📄 產出中，請稍候..."):
             try:
-                output_path = generate_codebook(df, column_types, variable_names, category_definitions)
+                output_path = "codebook.docx"  # 明確指定 Word 檔案名稱
+                output_path = generate_codebook(
+                    df, column_types, variable_names, category_definitions, output_path=output_path
+                )
                 with open(output_path, "rb") as f:
                     file_data = f.read()
                     b64 = base64.b64encode(file_data).decode()
@@ -60,5 +63,4 @@ if df is not None and code_df is not None:
                 st.success("✅ 報告已產出，可直接下載。")
             except Exception as e:
                 st.error(f"❌ 產出失敗：{e}")
-else:
-    st.info("📌 請上傳主資料與變數類型定義檔才能進行產出。")
+
