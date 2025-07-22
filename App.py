@@ -15,6 +15,7 @@ if uploaded_file is not None:
     # 讀取資料
     if uploaded_file.name.endswith(".csv"):
         df = pd.read_csv(uploaded_file)
+        df.columns = df.columns.str.strip()
     else:
         df = pd.read_excel(uploaded_file)
 
