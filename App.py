@@ -35,6 +35,8 @@ if df is not None:
         if st.button("🚀 產出 Codebook"):
             with st.spinner("產生中..."):
                 try:
+                    print("df.columns =", list(df.columns))
+                    print("code_df['Column'] =", list(code_df["Column"]))
                     output_path = generate_codebook(df, column_types, variable_names, category_definitions)
                     with open(output_path, "rb") as f:
                         file_data = f.read()
