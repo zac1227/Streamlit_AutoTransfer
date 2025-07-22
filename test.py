@@ -69,6 +69,16 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
                 pass
 
         elif type_code == 1:  # 連續型
+            try:
+                df[col] = pd.to_numeric(df[col], errors="coerce")  # 強制轉為數值
+            except Exception as e:
+                print(f"❌ 欄位 {col} 強制轉數值失敗：{e}")
+                continue
+
+            if df[col].dropna().empty:
+                print(f"⚠️ 欄位 {col} 無有效數值（全為 NaN），略過")
+                continue
+
             desc = df[col].describe()
 
             table = doc.add_table(rows=3, cols=4)
@@ -88,6 +98,7 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
             table.cell(2, 2).text = "最小值"
             table.cell(2, 3).text = f"{desc['min']:.3f}"
 
+            # Histogram
             fig, ax = plt.subplots()
             df[col].plot(kind="hist", bins=10, color="skyblue", edgecolor="black", ax=ax)
             ax.set_title(f"Histogram of {col}")
@@ -101,6 +112,7 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
             except PermissionError:
                 pass
 
+            # Boxplot
             fig2, ax2 = plt.subplots()
             df.boxplot(column=col, ax=ax2)
             ax2.set_title(f"Boxplot of {col}")
@@ -114,6 +126,4 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
             except PermissionError:
                 pass
 
-    doc.save(output_path)
-    return output_path
 
