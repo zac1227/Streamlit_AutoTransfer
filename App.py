@@ -1,55 +1,66 @@
-# app.py
-
 import streamlit as st
 import pandas as pd
-from test import generate_codebook
 import base64
 import os
+import io
 
+from test import generate_codebook  # 確保 test.py 有放對位置並含有該函式
+
+# ---------- 📥 上傳區塊 ----------
 st.set_page_config(page_title="Codebook 產生器", layout="wide")
 st.title("📄 自動化 Codebook 產生工具")
 
-uploaded_maindata = st.file_uploader("請上傳 CSV 檔案", type=["csv"])
-uploaded_codebook = st.file_uploader("請上傳 Codebook 檔案（選填，需含 Column 與 Type 欄位）", type=["csv"])
+def read_uploaded_csv(uploaded_file):
+    for enc in ["utf-8", "utf-8-sig", "cp950", "big5"]:
+        try:
+            return pd.read_csv(io.TextIOWrapper(uploaded_file, encoding=enc))
+        except Exception:
+            uploaded_file.seek(0)
+            continue
+    st.error("❌ 檔案無法讀取，請確認是否為有效的 CSV 並使用常見編碼（UTF-8、BIG5、CP950）")
+    return None
 
-if uploaded_maindata is not None:
-    df = pd.read_csv(uploaded_maindata)  # 或你的安全讀取函數
-    st.dataframe(df.head())
+uploaded_maindata = st.file_uploader("📂 請上傳主資料檔（CSV）", type=["csv"])
+uploaded_codebook = st.file_uploader("📋 請上傳變數類型檔 code.csv（需包含 Column 與 Type 欄位）", type=["csv"])
 
-code_df = pd.read_csv(uploaded_codebook) if uploaded_codebook else None
+df = None
+code_df = None
 
-if df:
-    st.success(f"成功讀取檔案，共 {df.shape[0]} 筆資料，{df.shape[1]} 欄位。")
+if uploaded_maindata:
+    df = read_uploaded_csv(uploaded_maindata)
+    if df is not None:
+        st.success(f"✅ 成功讀取主資料，共 {df.shape[0]} 筆，{df.shape[1]} 欄位。")
+        with st.expander("🔍 預覽主資料"):
+            st.dataframe(df.head())
 
-    with st.expander("🔍 預覽資料"):
-        st.dataframe(df.head())
-
-    st.markdown("---")
-    st.subheader("📤 報告產出")
-
+if uploaded_codebook:
+    code_df = read_uploaded_csv(uploaded_codebook)
     if code_df is not None:
-        # 建立 column_types dict
-        column_types = dict(zip(code_df["Column"], code_df["Type"]))
+        st.success(f"✅ 成功讀取 Codebook，共定義 {len(code_df)} 欄位。")
+        with st.expander("📋 預覽 Codebook"):
+            st.dataframe(code_df)
 
-        # 可選：分類說明與欄位標籤
-        variable_names = {col: col for col in df.columns}  # 可改為自動讀 label
-        category_definitions = {}  # 若你有類別說明可以加入
+# ---------- 🧠 資料處理 ----------
+st.markdown("---")
+st.subheader("📤 報告產出區")
 
-        if st.button("🚀 產出 Codebook"):
-            with st.spinner("產生中..."):
-                try:
-                    print("df.columns =", list(df.columns))
-                    print("code_df['Column'] =", list(code_df["Column"]))
-                    output_path = generate_codebook(df, column_types, variable_names, category_definitions)
-                    with open(output_path, "rb") as f:
-                        file_data = f.read()
-                        b64 = base64.b64encode(file_data).decode()
-                        href = f'<a href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{b64}" download="{os.path.basename(output_path)}">📥 點我下載 Codebook 報告 (Word)</a>'
-                        st.markdown(href, unsafe_allow_html=True)
-                    st.success("✅ 報告產出成功，可直接下載。")
-                except PermissionError as e:
-                    st.error(f"⚠️ 檔案處理失敗：{e}")
-    
+if df is not None and code_df is not None:
+    # 建立欄位型別設定
+    column_types = dict(zip(code_df["Column"], code_df["Type"]))
+    variable_names = {col: col for col in df.columns}
+    category_definitions = {}  # 若你之後想加對應定義，可放這裡
 
-    st.markdown("---")
-    st.caption("💡 註：若選擇『略過』，該欄位將不納入報告產出。")
+    if st.button("🚀 產出 Codebook 報告"):
+        with st.spinner("📄 產出中，請稍候..."):
+            try:
+                output_path = generate_codebook(df, column_types, variable_names, category_definitions)
+                with open(output_path, "rb") as f:
+                    file_data = f.read()
+                    b64 = base64.b64encode(file_data).decode()
+                    href = f'<a href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{b64}" download="{os.path.basename(output_path)}">📥 點我下載 Codebook 報告（Word）</a>'
+                    st.markdown(href, unsafe_allow_html=True)
+                st.success("✅ 報告已產出，可直接下載。")
+            except Exception as e:
+                st.error(f"❌ 產出失敗：{e}")
+else:
+    st.info("📌 請上傳主資料與變數類型定義檔才能進行產出。")
