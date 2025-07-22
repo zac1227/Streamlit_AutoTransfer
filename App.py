@@ -57,7 +57,7 @@ if uploaded_file is not None:
     with st.expander("🔍 預覽資料"):
         st.dataframe(df.head())
 
-    st.subheader("🧠 自動判斷欄位型別（可修改）")
+    
     column_types = {}
     variable_names = {}
     category_definitions = {}
@@ -79,6 +79,7 @@ if uploaded_file is not None:
                 
             except PermissionError as e:
                 st.error(f"⚠️ 檔案處理失敗：{e}")
+    st.subheader("🧠 自動判斷欄位型別（可修改）")
     for col in df.columns:
         with st.container():
             st.markdown(f"**欄位：{col}**")
