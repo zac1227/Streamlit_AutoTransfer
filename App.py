@@ -23,18 +23,17 @@ if data_file and code_file:
     if st.button("📊 產生 Codebook"):
         output_path = "codebook.docx"
         with st.spinner("正在產生報告..."):
-            generate_codebook("temp_data.csv", "temp_code.csv", output_path)
-        st.success("✅ 完成！以下為下載連結：")
-
-        with open(output_path, "rb") as f:
-            st.download_button(
-                label="📥 下載 Word 報告",
-                data=f,
-                file_name="codebook.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
-
-        # 清理暫存
-        os.remove("temp_data.csv")
-        os.remove("temp_code.csv")
-        os.remove("codebook.docx")
+            try:
+                generate_codebook("temp_data.csv", "temp_code.csv", output_path)
+                st.success("✅ 完成！以下為下載連結：")
+                with open(output_path, "rb") as f:
+                    st.download_button(
+                        label="📥 下載 Word 報告",
+                        data=f,
+                        file_name="codebook.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    )
+            except Exception as e:
+                import traceback
+                st.error("⚠️ 發生錯誤，以下是詳細訊息：")
+                st.code(traceback.format_exc())
