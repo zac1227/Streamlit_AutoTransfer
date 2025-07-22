@@ -30,26 +30,26 @@ if uploaded_file is not None:
         else:
             meta_df = pd.read_excel(uploaded_meta)
 
-    if "Column" in meta_df.columns and "Type" in meta_df.columns:
-        # 加入 0/1/2 對應的中文型別
-        type_mapping = {
-            0: "略過",
-            1: "連續型",
-            2: "類別型",
-            "0": "略過",
-            "1": "連續型",
-            "2": "類別型"
-        }
+        if "Column" in meta_df.columns and "Type" in meta_df.columns:
+            # 加入 0/1/2 對應的中文型別
+            type_mapping = {
+                0: "略過",
+                1: "連續型",
+                2: "類別型",
+                "0": "略過",
+                "1": "連續型",
+                "2": "類別型"
+            }
 
-        # 將 Type 欄轉換為文字標籤（例如 "連續型"）
-        meta_df["Type"] = meta_df["Type"].map(type_mapping).fillna("略過")
+            # 將 Type 欄轉換為文字標籤（例如 "連續型"）
+            meta_df["Type"] = meta_df["Type"].map(type_mapping).fillna("略過")
 
-        # 建立對應字典：{欄位名稱: 類型}
-        user_defined_types = dict(zip(meta_df["Column"], meta_df["Type"]))
+            # 建立對應字典：{欄位名稱: 類型}
+            user_defined_types = dict(zip(meta_df["Column"], meta_df["Type"]))
 
-        st.success("✅ 成功載入欄位型別設定")
-    else:
-        st.error("❌ 上傳的檔案中需包含 'Column' 與 'Type' 兩欄")
+            st.success("✅ 成功載入欄位型別設定")
+        else:
+            st.error("❌ 上傳的檔案中需包含 'Column' 與 'Type' 兩欄")
 
 
 
