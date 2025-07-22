@@ -26,6 +26,8 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
         # 🟦 Categorical Variable
         if type_code == 2:
             value_counts = df[col].value_counts(dropna=False)
+            value_counts = value_counts.sort_index()  # ✅ 確保排序正確（照 label 排）
+
             total = len(df)
             defs = category_definitions.get(col, {})
 
@@ -48,7 +50,7 @@ def generate_codebook(df, column_types, variable_names, category_definitions, ou
 
             # Bar chart
             fig, ax = plt.subplots()
-            value_counts = df[col].value_counts(dropna=False).sort_index()
+            value_counts.plot(kind="bar", color="cornflowerblue", ax=ax)
             ax.set_title(f"Count Plot of {col}")
             tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
             plt.tight_layout()
