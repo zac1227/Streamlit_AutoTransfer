@@ -2,95 +2,72 @@ from docx import Document
 from docx.shared import Inches
 import matplotlib.pyplot as plt
 import pandas as pd
-import tempfile
-import os
+import tempfile, os
 
 def generate_codebook(df, column_types, variable_names, category_definitions, output_path="codebook.docx"):
     doc = Document()
     doc.add_heading("Codebook 統計摘要報告", level=1)
 
     # 摘要統計
-    total_rows, total_cols = df.shape
-    doc.add_paragraph(f"總筆數：{total_rows}")
-    doc.add_paragraph(f"欄位數：{total_cols}")
-    doc.add_paragraph("欄位缺失值統計（僅顯示有缺失的欄位）：")
-
+    rows, cols = df.shape
+    doc.add_paragraph(f"總筆數：{rows}")
+    doc.add_paragraph(f"欄位數：{cols}")
+    doc.add_paragraph("有缺失值的欄位：")
     na_table = doc.add_table(rows=1, cols=3)
     na_table.style = "Table Grid"
-    na_table.cell(0, 0).text = "欄位名稱"
+    na_table.cell(0, 0).text = "欄位"
     na_table.cell(0, 1).text = "缺失數"
     na_table.cell(0, 2).text = "缺失比例"
+    for c in df.columns:
+        n = df[c].isnull().sum()
+        if n > 0:
+            r = na_table.add_row().cells
+            r[0].text, r[1].text, r[2].text = c, str(n), f"{n/rows:.2%}"
 
-    for col in df.columns:
-        na_count = df[col].isnull().sum()
-        if na_count > 0:
-            row = na_table.add_row().cells
-            row[0].text = col
-            row[1].text = str(na_count)
-            row[2].text = f"{na_count / total_rows:.2%}"
+    # 各欄位摘要
+    for col, tp in column_types.items():
+        if col not in df.columns or tp == "略過": continue
+        var = variable_names.get(col, col)
+        doc.add_heading(f"{col}（{var}）", level=2)
 
-    for col in column_types:
-        if col not in df.columns or column_types[col] == "略過":
-            continue
-
-        var_name = variable_names.get(col, col)
-        doc.add_heading(f"變數：{col}（{var_name}）", level=2)
-
-        if column_types[col] == "類別型":
+        if tp == "類別型":
             vc = df[col].value_counts(dropna=False)
-            table = doc.add_table(rows=4, cols=4)
-            table.style = "Table Grid"
-
-            table.cell(0, 0).text = "變數編號"
-            table.cell(0, 1).text = col
-            table.cell(0, 2).text = "變數名稱"
-            table.cell(0, 3).text = var_name
-
-            keys = list(vc.index)
-            defs = category_definitions.get(col, {})
-
-            table.cell(1, 0).text = "變數類別"
-            table.cell(1, 1).text = str(keys[0]) if len(keys) > 0 else ""
-            table.cell(1, 2).text = str(keys[1]) if len(keys) > 1 else ""
-            table.cell(1, 3).text = "變數定義"
-
-            table.cell(2, 1).text = defs.get(keys[0], "") if len(keys) > 0 else ""
-            table.cell(2, 2).text = defs.get(keys[1], "") if len(keys) > 1 else ""
-
-            table.cell(3, 0).text = "數量與比例"
-            total = len(df)
-            table.cell(3, 1).text = f"{vc[keys[0]]} ({vc[keys[0]]/total:.2%})" if len(keys) > 0 else ""
-            table.cell(3, 2).text = f"{vc[keys[1]]} ({vc[keys[1]]/total:.2%})" if len(keys) > 1 else ""
-            table.cell(3, 3).text = "圖片"
-
-            if df[col].dropna().shape[0] > 0:
+            t = len(df)
+            doc.add_paragraph("類別分布：")
+            for k, v in vc.items():
+                doc.add_paragraph(f"{k}: {v} ({v/t:.2%})", style="List Bullet")
+            if len(vc.dropna())>0:
                 fig, ax = plt.subplots()
-                vc.sort_index().plot(kind="bar", color="cornflowerblue", ax=ax)
-                ax.set_title(f"Count Plot of {col}")
+                vc.sort_index().plot(kind="bar", ax=ax, color="cornflowerblue")
+                ax.set_title(f"{col} 分布")
                 tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-                plt.tight_layout()
-                plt.savefig(tmp.name)
-                plt.close("all")
-                doc.add_picture(tmp.name, width=Inches(4.5))
+                plt.tight_layout(); plt.savefig(tmp.name); plt.close()
+                doc.add_picture(tmp.name, width=Inches(4))
                 os.unlink(tmp.name)
 
-        elif column_types[col] == "連續型" and pd.api.types.is_numeric_dtype(df[col]):
-            mean_val = df[col].mean()
-            std_val = df[col].std()
-            min_val = df[col].min()
-            max_val = df[col].max()
+        elif tp == "連續型":
+            if not pd.api.types.is_numeric_dtype(df[col]): continue
+            s = df[col]
+            mean, std, mn, mx = s.mean(), s.std(), s.min(), s.max()
+            doc.add_paragraph(f"平均數：{mean:.3f}")
+            doc.add_paragraph(f"標準差：{std:.3f}")
+            doc.add_paragraph(f"最小值：{mn:.3f}")
+            doc.add_paragraph(f"最大值：{mx:.3f}")
+            if s.dropna().shape[0]>0:
+                fig, ax = plt.subplots()
+                s.plot(kind="hist", bins=10, color="skyblue", ax=ax)
+                ax.set_title(f"{col} 分布")
+                tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+                plt.tight_layout(); plt.savefig(tmp.name); plt.close()
+                doc.add_picture(tmp.name, width=Inches(4))
+                os.unlink(tmp.name)
+                fig2, ax2 = plt.subplots()
+                df.boxplot(column=col, ax=ax2)
+                ax2.set_title(f"{col} Boxplot")
+                tmp2 = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+                plt.tight_layout(); plt.savefig(tmp2.name); plt.close()
+                doc.add_picture(tmp2.name, width=Inches(4))
+                os.unlink(tmp2.name)
 
-            table = doc.add_table(rows=3, cols=4)
-            table.style = "Table Grid"
-            table.cell(0, 0).text = "變數編號"
-            table.cell(0, 1).text = col
-            table.cell(0, 2).text = "變數名稱"
-            table.cell(0, 3).text = var_name
-            table.cell(1, 0).text = "平均數"
-            table.cell(1, 1).text = f"{mean_val:.3f}"
-            table.cell(1, 2).text = "標準差"
-            table.cell(1, 3).text = f"{std_val:.3f}"
-            table.cell(2, 0).text = "最大值"
-            table.cell(2, 1).text = f"{max_val:.3f}"
-            table.cell(2, 2).text = "最小值"
-            table.cell(2, 3).text
+    doc.save(output_path)
+    return output_path
