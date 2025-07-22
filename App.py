@@ -24,7 +24,7 @@ if data_file and code_file:
         output_path = "codebook.docx"
         with st.spinner("正在產生報告..."):
             try:
-                generate_codebook("temp_data.csv", "temp_code.csv", output_path)
+                generate_codebook("temp_data.csv", "temp_code.csv", "codebook.docx")
                 st.success("✅ 完成！以下為下載連結：")
                 with open(output_path, "rb") as f:
                     st.download_button(
