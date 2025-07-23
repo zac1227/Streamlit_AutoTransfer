@@ -5,15 +5,15 @@ import pandas as pd
 import tempfile
 import os
 
-def generate_codebook(df, column_types, variable_names, category_definitions, output_path="codebook.docx", preview_mode=False):
+def generate_codebook(df, column_types, variable_names, category_definitions, code_df=None, output_path="codebook.docx", preview_mode=False):
     if output_path is None:
         output_path = "codebook.docx"
 
     doc = Document()
     doc.add_heading("Codebook Summary Report", level=1)
     df = df.dropna(how='all')  # Remove rows with all NaNs
-
-    for col in df.columns:
+    columns = code_df["Column"] if code_df is not None else df.columns
+    for col in columns:
         if col not in column_types:
             continue
         type_code = column_types[col]
