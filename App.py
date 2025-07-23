@@ -11,83 +11,67 @@ tab1, tab2 = st.tabs(["📄 Codebook 產生器","📊 進階分析工具", ])
 
 with tab1:
     st.title("📄 自動化 Codebook 產生工具")
-    # ---------- 📥 上傳區塊 ----------
-    st.markdown("""
-    ### 📘 功能說明
+
+    st.markdown("""### 📘 功能說明
     本工具可根據 `code.csv` 中的 Type 欄位，對主資料進行以下轉換：
 
-    - 若 Type 欄為 ˋ0ˋ，則不進行任何轉換，直接略過。
-    - 若 Type 欄為 ˋ1ˋ，則視為數值型。
-    - 若 Type 欄為 ˋ2ˋ，則視為類別型。
-    - 若 Type 欄為 ˋy1ˋ 或 ˋy2ˋ，則視為目標變數（Y），並將其視為類別型或數值型。
-    
+    - `0`：略過
+    - `1`：數值型
+    - `2`：類別型
+    - `y1` 或 `y2`：目標變數，分別代表數值型與類別型
     """)
-    
 
-    def read_uploaded_csv(uploaded_file):
-        for enc in ["utf-8", "utf-8-sig", "cp950", "big5"]:
-            try:
-                return pd.read_csv(io.TextIOWrapper(uploaded_file, encoding=enc))
-            except Exception:
-                uploaded_file.seek(0)
-                continue
-        st.error("❌ 檔案無法讀取，請確認是否為有效的 CSV 並使用常見編碼（UTF-8、BIG5、CP950）")
-        return None
+    # 🔹 上傳區
+    uploaded_maindata = st.file_uploader("📂 主資料檔（CSV）", type=["csv"])
+    uploaded_codebook = st.file_uploader("📋 變數定義檔 code.csv（需含 Column 與 Type）", type=["csv"])
 
-    uploaded_maindata = st.file_uploader("📂 請上傳主資料檔（CSV）", type=["csv"])
-    uploaded_codebook = st.file_uploader("📋 請上傳變數類型檔 code.csv（需包含 Column 與 Type 欄位）", type=["csv"])
-
-    df = None
-    code_df = None
-
+    df = code_df = None
     if uploaded_maindata:
         df = read_uploaded_csv(uploaded_maindata)
         if df is not None:
-            st.success(f"✅ 成功讀取主資料，共 {df.shape[0]} 筆，{df.shape[1]} 欄位。")
+            st.success(f"✅ 成功讀取主資料：{df.shape[0]} 筆、{df.shape[1]} 欄")
             with st.expander("🔍 預覽主資料"):
                 st.dataframe(df.head())
 
     if uploaded_codebook:
         code_df = read_uploaded_csv(uploaded_codebook)
         if code_df is not None:
-            st.success(f"✅ 成功讀取 Codebook，共定義 {len(code_df)} 欄位。")
-    
+            st.success(f"✅ 成功讀取 code.csv：共 {len(code_df)} 欄位")
 
-    # ---------- 🧠 資料處理 ----------
-    st.markdown("---")
-    st.subheader("📉 遺失值統計")
-    na_counts = df.isnull().sum()
-    na_percent = df.isnull().mean() * 100
-    na_df = pd.DataFrame({
+    # 🔹 遺失值統計
+    if df is not None:
+        st.markdown("---")
+        st.subheader("📉 遺失值統計")
+        na_counts = df.isnull().sum()
+        na_percent = df.isnull().mean() * 100
+        na_df = pd.DataFrame({
             "欄位名稱": na_counts.index,
             "遺失數": na_counts.values,
             "遺失比例 (%)": na_percent.round(2).values
         })
-    na_df = na_df[na_df["遺失數"] > 0].sort_values(by="遺失數", ascending=False)
-    if na_df.empty:
-        st.info("✅ 無遺失值")
-    else:
-        st.warning("⚠️ 以下欄位有遺失值：")
-        st.dataframe(na_df)
-        rows_after_na = df.dropna().shape[0]
-        st.write(f"📦 刪除所有含遺失值的資料後，剩餘筆數為 {rows_after_na} 筆資料")    
-    st.subheader("📤 報告產出區")
+        na_df = na_df[na_df["遺失數"] > 0].sort_values(by="遺失數", ascending=False)
+        if na_df.empty:
+            st.info("✅ 無遺失值")
+        else:
+            st.warning("⚠️ 以下欄位有遺失值：")
+            st.dataframe(na_df)
+            st.write(f"📦 若刪除所有含遺失值資料，剩餘筆數為：**{df.dropna().shape[0]} 筆**")
+
+    # 🔹 報告產出區
+    st.markdown("---")
+    st.subheader("📤 Codebook 報告產出")
 
     if df is not None and code_df is not None:
-    # 移除 Type 為 0 的欄位
         code_df = code_df[~code_df["Type"].astype(str).str.lower().eq("0")]
 
-        # 建立欄位型別與角色（X 或 Y）
         column_types = {}
         variable_names = {}
         column_roles = {}
-        x_counter = 1
-        y_counter = 1
+        x_counter = y_counter = 1
 
         for _, row in code_df.iterrows():
             col = row["Column"]
             t = str(row["Type"]).lower()
-
             if t == "y1":
                 column_roles[col] = "Y"
                 column_types[col] = 1
@@ -101,28 +85,36 @@ with tab1:
             else:
                 st.warning(f"⚠️ Unknown Type '{t}' for column '{col}' — skipped.")
                 continue
-
             variable_names[col] = column_roles.get(col, col)
 
-                
-        category_definitions = {}  # 若你之後想加對應定義，可放這裡
+        # 🔹 變數類型統計
+        st.subheader("📊 變數類型統計")
+        type_count = pd.Series(column_types).value_counts().sort_index()
+        type_label_map = {1: "數值型 (Type 1)", 2: "類別型 (Type 2)"}
+        type_summary = pd.DataFrame({
+            "變數類型": [type_label_map.get(t, f"其他 ({t})") for t in type_count.index],
+            "欄位數": type_count.values
+        })
+        st.dataframe(type_summary)
+
+        category_definitions = {}  # 可加入對應標籤
         if st.button("🚀 產出 Codebook 報告"):
             with st.spinner("📄 產出中，請稍候..."):
                 try:
-                    output_path = "codebook.docx"  # 明確指定 Word 檔案名稱
+                    output_path = "codebook.docx"
                     output_path = generate_codebook(
-                        df, column_types, variable_names, category_definitions,code_df=code_df ,output_path=output_path
+                        df, column_types, variable_names, category_definitions,
+                        code_df=code_df, output_path=output_path
                     )
                     with open(output_path, "rb") as f:
-                        file_data = f.read()
-                        b64 = base64.b64encode(file_data).decode()
-                        href = f'<a href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{b64}" download="{os.path.basename(output_path)}">📥 點我下載 Codebook 報告（Word）</a>'
+                        b64 = base64.b64encode(f.read()).decode()
+                        href = f'<a href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{b64}" download="{output_path}">📥 點我下載 Codebook 報告</a>'
                         st.markdown(href, unsafe_allow_html=True)
-                    st.success("✅ 報告已產出，可直接下載。")
+                    st.success("✅ 報告產出完成！")
                 except Exception as e:
-                    st.error(f"❌ 產出失敗：{e}")
+                    st.error(f"❌ 報告產出失敗：{e}")
 
-# ---------- Tab 1 ----------
+
 # ---------- Tab 2 ----------
 with tab2:
     st.title("📊 進階分析工具")
@@ -227,6 +219,7 @@ with tab2:
             rows_after_na = df2.dropna().shape[0]
             st.write(f"📦 刪除所有含遺失值的資料後，剩餘筆數為 {rows_after_na} 筆資料")
         # 🔎 變數類型統計
+        st.markdown("---")
         st.subheader("📊 變數類型統計")
         type_count = pd.Series(column_types).value_counts().sort_index()
         type_label_map = {
