@@ -221,7 +221,7 @@ with tab2:
             "遺失數": na_counts.values,
             "遺失比例 (%)": na_percent.round(2).values
         })
-        na_df = na_df[na_df["遺失數"] > 0].sort_values(by="遺失數", ascending=False)
+        na_df = na_df[na_df["遺失數"] > 0].sort_values(by=na_counts.index, ascending=False)
         if na_df.empty:
             st.info("✅ 無遺失值")
         else:
