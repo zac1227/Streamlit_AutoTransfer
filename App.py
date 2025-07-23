@@ -160,27 +160,30 @@ with tab2:
             if transform.lower().startswith("cut:["):
                 try:
                     bins = eval(transform[4:])
-                    df2[col + "_binned"] = pd.cut(df2[col], bins=bins, include_lowest=True, labels=False)
-                    column_types[col + "_binned"] = 2
-                    variable_names[col + "_binned"] = col
+                    new_col = col + "_binned"
+                    df2[new_col] = pd.cut(df2[col], bins=bins, include_lowest=True, labels=False)
+                    column_types[new_col] = 2
+                    variable_names[new_col] = col
                     df2.drop(columns=[col], inplace=True)
                 except Exception as e:
                     st.warning(f"🔸 {col} 分箱失敗：{e}")
             elif transform.lower().startswith("cut:quantile:"):
                 try:
                     q = int(transform.split(":")[-1])
-                    df2[col + "_binned"] = pd.qcut(df2[col], q=q, duplicates='drop', labels=False)
-                    column_types[col + "_binned"] = 2
-                    variable_names[col + "_binned"] = col
+                    new_col = col + "_binned"
+                    df2[new_col] = pd.qcut(df2[col], q=q, duplicates='drop', labels=False)
+                    column_types[new_col] = 2
+                    variable_names[new_col] = col
                     df2.drop(columns=[col], inplace=True)
                 except Exception as e:
                     st.warning(f"🔸 {col} 分位數切分失敗：{e}")
             elif transform.lower().startswith("cut:uniform:"):
                 try:
                     k = int(transform.split(":")[-1])
-                    df2[col + "_binned"] = pd.cut(df2[col], bins=k, labels=False)
-                    column_types[col + "_binned"] = 2
-                    variable_names[col + "_binned"] = col
+                    new_col = col + "_binned"
+                    df2[new_col] = pd.cut(df2[col], bins=k, labels=False)
+                    column_types[new_col] = 2
+                    variable_names[new_col] = col
                     df2.drop(columns=[col], inplace=True)
                 except Exception as e:
                     st.warning(f"🔸 {col} 均分切分失敗：{e}")
@@ -209,7 +212,7 @@ with tab2:
             with st.spinner("產出中..."):
                 try:
                     output_path = "transformed_codebook.docx"
-                    generate_codebook(df2, column_types, variable_names, category_definitions,code_df=code2, output_path=output_path)
+                    generate_codebook(df2, column_types, variable_names, category_definitions, code_df=code2, output_path=output_path)
                     with open(output_path, "rb") as f:
                         b64 = base64.b64encode(f.read()).decode()
                         href = f'<a href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{b64}" download="{output_path}">📥 下載 Codebook 報告（轉換後）</a>'
