@@ -12,7 +12,7 @@ def generate_codebook(df, column_types, variable_names, category_definitions, co
     doc = Document()
     doc.add_heading("Codebook Summary Report", level=1)
 
-    df = df.dropna(how='all')  # Remove rows with all NaNs
+    df = df.dropna()  # Remove rows with all NaNs
     code_df = code_df[~code_df["Type"].astype(str).str.lower().eq("0")]
 
     # 🔹 插入：缺失值統計區塊
