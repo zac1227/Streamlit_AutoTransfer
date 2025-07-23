@@ -209,7 +209,7 @@ with tab2:
             with st.spinner("產出中..."):
                 try:
                     output_path = "transformed_codebook.docx"
-                    generate_codebook(df2, column_types, variable_names, category_definitions, output_path=output_path)
+                    generate_codebook(df2, column_types, variable_names, category_definitions,code_df=code2, output_path=output_path)
                     with open(output_path, "rb") as f:
                         b64 = base64.b64encode(f.read()).decode()
                         href = f'<a href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{b64}" download="{output_path}">📥 下載 Codebook 報告（轉換後）</a>'
