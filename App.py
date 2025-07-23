@@ -201,7 +201,12 @@ with tab2:
             "遺失數": na_counts.values,
             "遺失比例 (%)": na_percent.round(2).values
         })
-        st.dataframe(na_df)
+        na_df = na_df[na_df["遺失數"] > 0].sort_values(by="遺失數", ascending=False)
+        if na_df.empty:
+            st.info("✅ 無遺失值")
+        else:
+            st.warning("⚠️ 以下欄位有遺失值：")
+            st.dataframe(na_df)
         # 🔎 變數類型統計
         st.subheader("📊 變數類型統計")
         type_count = pd.Series(column_types).value_counts().sort_index()
