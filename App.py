@@ -126,7 +126,7 @@ with tab2:
         return None
 
     uploaded_main = st.file_uploader("📂 請上傳主資料（CSV）", type=["csv"], key="main2")
-    uploaded_code = st.file_uploader("📋 請上傳 code.csv（含 Transform 欄位）", type=["csv"], key="code2")
+    uploaded_code = st.file_uploader("📋 請上傳 code.csv（需包含 Column、 Type、 Transform欄位）", type=["csv"], key="code2")
 
     df2, code2 = None, None
 
