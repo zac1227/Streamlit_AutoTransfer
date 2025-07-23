@@ -212,6 +212,11 @@ with tab2:
             with st.spinner("產出中..."):
                 try:
                     output_path = "transformed_codebook.docx"
+                    code_df_transformed = pd.DataFrame({
+                    "Column": list(column_types.keys()),
+                    "Type": [column_types[k] for k in column_types],
+                })
+                    generate_codebook(df2, column_types, variable_names, category_definitions, code_df=code_df_transformed, output_path=output_path)
                     generate_codebook(df2, column_types, variable_names, category_definitions, code_df=code2, output_path=output_path)
                     with open(output_path, "rb") as f:
                         b64 = base64.b64encode(f.read()).decode()
