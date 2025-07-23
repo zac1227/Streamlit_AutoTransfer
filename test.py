@@ -11,8 +11,37 @@ def generate_codebook(df, column_types, variable_names, category_definitions, co
 
     doc = Document()
     doc.add_heading("Codebook Summary Report", level=1)
+
     df = df.dropna(how='all')  # Remove rows with all NaNs
     code_df = code_df[~code_df["Type"].astype(str).str.lower().eq("0")]
+
+    # 🔹 插入：缺失值統計區塊
+    doc.add_heading("Missing Value Summary", level=2)
+    na_counts = df.isnull().sum()
+    na_percent = df.isnull().mean() * 100
+
+    na_df = pd.DataFrame({
+        "Column": na_counts.index,
+        "Missing Count": na_counts.values,
+        "Missing Rate (%)": na_percent.round(2).values
+    })
+
+    na_df = na_df[na_df["Missing Count"] > 0]  # 只顯示有遺失值的欄位
+
+    if not na_df.empty:
+        table = doc.add_table(rows=1 + len(na_df), cols=3)
+        table.style = "Table Grid"
+        table.cell(0, 0).text = "Column"
+        table.cell(0, 1).text = "Missing Count"
+        table.cell(0, 2).text = "Missing Rate (%)"
+
+        for i, row in na_df.iterrows():
+            table.cell(i + 1, 0).text = str(row["Column"])
+            table.cell(i + 1, 1).text = str(row["Missing Count"])
+            table.cell(i + 1, 2).text = str(row["Missing Rate (%)"])
+    else:
+        doc.add_paragraph("No missing values in any columns.")
+
     columns = code_df["Column"] if code_df is not None else df.columns
     for col in columns:
         if col not in column_types:
