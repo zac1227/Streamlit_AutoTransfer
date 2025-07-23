@@ -12,7 +12,16 @@ tab1, tab2 = st.tabs(["📄 Codebook 產生器","📊 進階分析工具", ])
 with tab1:
     st.title("📄 自動化 Codebook 產生工具")
     # ---------- 📥 上傳區塊 ----------
+    st.markdown("""
+    ### 📘 功能說明
+    本工具可根據 `code.csv` 中的 Type 欄位，對主資料進行以下轉換：
+
+    - 若 Type 欄為 ˋ0ˋ，則不進行任何轉換，直接略過。
+    - 若 Type 欄為 ˋ1ˋ，則視為數值型。
+    - 若 Type 欄為 ˋ2ˋ，則視為類別型。
+    - 若 Type 欄為 ˋy1ˋ 或 ˋy2ˋ，則視為目標變數（Y），並將其視為類別型或數值型。
     
+    """)
     
 
     def read_uploaded_csv(uploaded_file):
@@ -183,7 +192,28 @@ with tab2:
         st.markdown("---")
         st.subheader("🔍 預覽轉換後資料")
         st.dataframe(df2.head())
-
+                # 🔎 遺失值統計
+        st.subheader("📉 遺失值統計")
+        na_counts = df2.isnull().sum()
+        na_percent = df2.isnull().mean() * 100
+        na_df = pd.DataFrame({
+            "欄位名稱": na_counts.index,
+            "遺失數": na_counts.values,
+            "遺失比例 (%)": na_percent.round(2).values
+        })
+        st.dataframe(na_df)
+        # 🔎 變數類型統計
+        st.subheader("📊 變數類型統計")
+        type_count = pd.Series(column_types).value_counts().sort_index()
+        type_label_map = {
+            1: "數值型 (Type 1)",
+            2: "類別型 (Type 2)"
+        }
+        type_summary = pd.DataFrame({
+            "變數類型": [type_label_map.get(t, f"其他 ({t})") for t in type_count.index],
+            "欄位數": type_count.values
+        })
+        st.dataframe(type_summary)
         csv = df2.to_csv(index=False).encode('utf-8-sig')
         st.download_button("📥 下載轉換後的 CSV", data=csv, file_name="transformed_data.csv", mime="text/csv")
         # ✅ 製作轉換後的 code_df
