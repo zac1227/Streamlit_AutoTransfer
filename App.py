@@ -5,13 +5,14 @@ import os
 import io
 
 from test import generate_codebook  # 確保 test.py 有放對位置並含有該函式
+st.set_page_config(page_title="Codebook 產生器", layout="wide")
 tab1, tab2 = st.tabs(["📄 Codebook 產生器","📊 進階分析工具", ])
 
 
 with tab1:
     st.title("📄 自動化 Codebook 產生工具")
     # ---------- 📥 上傳區塊 ----------
-    st.set_page_config(page_title="Codebook 產生器", layout="wide")
+    
     
 
     def read_uploaded_csv(uploaded_file):
