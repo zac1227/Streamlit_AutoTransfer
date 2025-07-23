@@ -106,12 +106,13 @@ with tab2:
     本工具可根據 `code.csv` 中的 Transform 欄位，對主資料進行以下轉換：
 
     - 若 Transform 欄為空或 'none'，則不進行任何轉換。
-    - 若為 `cut:[0,10,20,30]`，將以手動分箱方式進行區間分類（含邊界），並轉換為 0,1,2,... 類別。
-    - 若為 `cut:quantile:4`，則會進行四等分的分位數切分，並轉換為 0,1,2,... 類別。
-    - 若為 `cut:uniform:3`，則會將資料等寬切為三段，並轉換為 0,1,2,... 類別。
+    - 若為 `cut:[0,10,20,30]`，將以手動分箱方式進行區間分類（含邊界），自動轉為 0, 1, 2...。
+    - 若為 `cut:quantile:4`，則會進行四等分的分位數切分。
+    - 若為 `cut:uniform:3`，則會將資料等寬切為三段。
     - 若欄位為類別型態，或 Transform 欄為 `onehot`，則會進行 one-hot encoding，並轉為 0/1。
 
     所有轉換後的欄位名稱將自動加上 `_binned` 或對應欄位前綴，原始欄位將被移除。
+    轉換後將依據原始 code.csv 更新 Type 資訊並自動產出 Codebook。
     """)
 
     def read_uploaded_csv(uploaded_file):
@@ -137,28 +138,40 @@ with tab2:
     if df2 is not None and code2 is not None:
         st.success("✅ 資料與 code.csv 載入成功")
 
-        # ✅ 移除 Type 為 0 的欄位
         code2 = code2[~code2["Type"].astype(str).str.lower().eq("0")]
 
-        transform_col = []
+        variable_names = {}
+        column_types = {}
+        category_definitions = {}
+
         for _, row in code2.iterrows():
             col = row["Column"]
+            t = str(row["Type"]).lower()
             transform = str(row.get("Transform", "")).strip()
+
             if col not in df2.columns:
                 continue
+
             if transform == '' or transform.lower() == 'none':
+                column_types[col] = int(t[-1]) if t.startswith("y") else int(t)
+                variable_names[col] = col
                 continue
+
             if transform.lower().startswith("cut:["):
                 try:
                     bins = eval(transform[4:])
                     df2[col + "_binned"] = pd.cut(df2[col], bins=bins, include_lowest=True, labels=False)
+                    column_types[col + "_binned"] = 2
+                    variable_names[col + "_binned"] = col
                     df2.drop(columns=[col], inplace=True)
                 except Exception as e:
                     st.warning(f"🔸 {col} 分箱失敗：{e}")
             elif transform.lower().startswith("cut:quantile:"):
                 try:
                     q = int(transform.split(":")[-1])
-                    df2[col + "_binned"] = pd.qcut(df2[col], q=q, labels=False, duplicates='drop')
+                    df2[col + "_binned"] = pd.qcut(df2[col], q=q, duplicates='drop', labels=False)
+                    column_types[col + "_binned"] = 2
+                    variable_names[col + "_binned"] = col
                     df2.drop(columns=[col], inplace=True)
                 except Exception as e:
                     st.warning(f"🔸 {col} 分位數切分失敗：{e}")
@@ -166,12 +179,17 @@ with tab2:
                 try:
                     k = int(transform.split(":")[-1])
                     df2[col + "_binned"] = pd.cut(df2[col], bins=k, labels=False)
+                    column_types[col + "_binned"] = 2
+                    variable_names[col + "_binned"] = col
                     df2.drop(columns=[col], inplace=True)
                 except Exception as e:
                     st.warning(f"🔸 {col} 均分切分失敗：{e}")
             elif df2[col].dtype == 'object' or transform.lower() == 'onehot':
                 try:
                     onehot = pd.get_dummies(df2[col], prefix=col, dtype=int)
+                    for new_col in onehot.columns:
+                        column_types[new_col] = 2
+                        variable_names[new_col] = new_col
                     df2 = pd.concat([df2.drop(columns=[col]), onehot], axis=1)
                 except Exception as e:
                     st.warning(f"🔸 {col} one-hot 編碼失敗：{e}")
@@ -184,6 +202,22 @@ with tab2:
 
         csv = df2.to_csv(index=False).encode('utf-8-sig')
         st.download_button("📥 下載轉換後的 CSV", data=csv, file_name="transformed_data.csv", mime="text/csv")
+
+        st.markdown("---")
+        st.subheader("📘 自動產出 Codebook")
+        if st.button("📄 產生報告（轉換後資料）"):
+            with st.spinner("產出中..."):
+                try:
+                    output_path = "transformed_codebook.docx"
+                    generate_codebook(df2, column_types, variable_names, category_definitions, output_path=output_path)
+                    with open(output_path, "rb") as f:
+                        b64 = base64.b64encode(f.read()).decode()
+                        href = f'<a href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{b64}" download="{output_path}">📥 下載 Codebook 報告（轉換後）</a>'
+                        st.markdown(href, unsafe_allow_html=True)
+                    st.success("✅ Codebook 已產出！")
+                except Exception as e:
+                    st.error(f"❌ 報告產出失敗：{e}")
+
 
 
 
