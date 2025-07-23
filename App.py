@@ -69,7 +69,7 @@ with tab1:
 
     # 🔹 報告產出區
     st.markdown("---")
-    st.subheader("📤 Codebook 報告產出")
+    
 
     if df is not None and code_df is not None:
         code_df = code_df[~code_df["Type"].astype(str).str.lower().eq("0")]
@@ -106,7 +106,7 @@ with tab1:
             "欄位數": type_count.values
         })
         st.dataframe(type_summary)
-
+        st.subheader("📤 Codebook 報告產出")
         category_definitions = {}  # 可加入對應標籤
         if st.button("🚀 產出 Codebook 報告"):
             with st.spinner("📄 產出中，請稍候..."):
