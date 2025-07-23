@@ -6,6 +6,16 @@ import io
 
 from test import generate_codebook  # 確保 test.py 有放對位置並含有該函式
 st.set_page_config(page_title="Codebook 產生器", layout="wide")
+# ✅ 🚨 請確保這段放在所有 tab1/tab2 之前！
+def read_uploaded_csv(uploaded_file):
+    for enc in ["utf-8", "utf-8-sig", "cp950", "big5"]:
+        try:
+            return pd.read_csv(io.TextIOWrapper(uploaded_file, encoding=enc))
+        except Exception:
+            uploaded_file.seek(0)
+            continue
+    st.error("❌ 檔案無法讀取，請確認是否為有效的 CSV 並使用常見編碼（UTF-8、BIG5、CP950）")
+    return None
 tab1, tab2 = st.tabs(["📄 Codebook 產生器","📊 進階分析工具", ])
 
 
