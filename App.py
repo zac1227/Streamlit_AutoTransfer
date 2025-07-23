@@ -100,6 +100,7 @@ with tab1:
 # ---------- Tab 2 ----------
 with tab2:
     st.title("📊 進階分析工具")
+
     st.markdown("""
     ### 📘 功能說明
     本工具可根據 `code.csv` 中的 Transform 欄位，對主資料進行以下轉換：
@@ -112,6 +113,7 @@ with tab2:
 
     所有轉換後的欄位名稱將自動加上 `_binned` 或對應欄位前綴。
     """)
+
     def read_uploaded_csv(uploaded_file):
         for enc in ["utf-8", "utf-8-sig", "cp950", "big5"]:
             try:
@@ -134,37 +136,43 @@ with tab2:
 
     if df2 is not None and code2 is not None:
         st.success("✅ 資料與 code.csv 載入成功")
-        transform_col = []
+
+        # ✅ 移除 Type 為 0 的欄位
         code2 = code2[~code2["Type"].astype(str).str.lower().eq("0")]
+
+        transform_col = []
         for _, row in code2.iterrows():
             col = row["Column"]
             transform = str(row.get("Transform", "")).strip()
+            if transform == '' or transform.lower() == 'none':
+                continue
             if transform.lower().startswith("cut:["):
                 try:
                     bins = eval(transform[4:])
                     df2[col + "_binned"] = pd.cut(df2[col], bins=bins, include_lowest=True)
+                    df2.drop(columns=[col], inplace=True)
                 except Exception as e:
                     st.warning(f"🔸 {col} 分箱失敗：{e}")
             elif transform.lower().startswith("cut:quantile:"):
                 try:
                     q = int(transform.split(":")[-1])
                     df2[col + "_binned"] = pd.qcut(df2[col], q=q, duplicates='drop')
+                    df2.drop(columns=[col], inplace=True)
                 except Exception as e:
                     st.warning(f"🔸 {col} 分位數切分失敗：{e}")
             elif transform.lower().startswith("cut:uniform:"):
                 try:
                     k = int(transform.split(":")[-1])
                     df2[col + "_binned"] = pd.cut(df2[col], bins=k)
+                    df2.drop(columns=[col], inplace=True)
                 except Exception as e:
                     st.warning(f"🔸 {col} 均分切分失敗：{e}")
             elif df2[col].dtype == 'object' or transform.lower() == 'onehot':
                 try:
                     onehot = pd.get_dummies(df2[col], prefix=col)
-                    df2 = pd.concat([df2, onehot], axis=1)
+                    df2 = pd.concat([df2.drop(columns=[col]), onehot], axis=1)
                 except Exception as e:
                     st.warning(f"🔸 {col} one-hot 編碼失敗：{e}")
-            elif transform == '' or transform.lower() == 'none':
-                continue
             else:
                 st.warning(f"🔸 未知 Transform 指令：{transform}（欄位 {col}）")
 
@@ -174,3 +182,4 @@ with tab2:
 
         csv = df2.to_csv(index=False).encode('utf-8-sig')
         st.download_button("📥 下載轉換後的 CSV", data=csv, file_name="transformed_data.csv", mime="text/csv")
+
