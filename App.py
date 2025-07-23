@@ -39,14 +39,14 @@ with tab1:
     if uploaded_maindata:
         df = read_uploaded_csv(uploaded_maindata)
         if df is not None:
-            st.success(f"✅ 成功讀取主資料：{df.shape[0]} 筆、{df.shape[1]} 欄")
+            st.success(f"✅ 成功讀取主資料：{df.shape[0]} 筆")
             with st.expander("🔍 預覽主資料"):
                 st.dataframe(df.head())
 
     if uploaded_codebook:
         code_df = read_uploaded_csv(uploaded_codebook)
         if code_df is not None:
-            st.success(f"✅ 成功讀取 code.csv：共 {len(code_df)} 欄位")
+            st.success(f"✅ 成功讀取 code.csv")
 
     # 🔹 遺失值統計
     if df is not None:
@@ -166,7 +166,7 @@ with tab2:
 
     if df2 is not None and code2 is not None:
         st.success("✅ 資料與 code.csv 載入成功")
-        st.success(f"✅主資料共 {df2.shape[0]} 筆，{df2.shape[1]} 欄位。")
+        st.success(f"✅主資料共 {df2.shape[0]} 筆")
         code2 = code2[~code2["Type"].astype(str).str.lower().eq("0")]
 
         variable_names = {}
