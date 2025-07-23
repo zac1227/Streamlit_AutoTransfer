@@ -106,10 +106,10 @@ with tab2:
     本工具可根據 `code.csv` 中的 Transform 欄位，對主資料進行以下轉換：
 
     - 若 Transform 欄為空或 'none'，則不進行任何轉換。
-    - 若為 `cut:[0,10,20,30]`，將以手動分箱方式進行區間分類（含邊界），自動轉為 0, 1, 2...。
-    - 若為 `cut:quantile:4`，則會進行四等分的分位數切分。
-    - 若為 `cut:uniform:3`，則會將資料等寬切為三段。
-    - 若欄位為類別型態，或 Transform 欄為 `onehot`，則會進行 one-hot encoding，並轉為 0/1。
+    - 若為 `cut:[0,100,200,300]`，將以手動分箱方式進行區間分類（含邊界），自動轉為 0, 1, 2...。
+        如: `cut:[0,100,200,300]` 會將數值分為 0-99, 100-199, 200-300 三個區間。
+    - 若 Transform 欄為 `onehot`，則會進行 one-hot encoding，並轉為 0/1。
+    
 
     所有轉換後的欄位名稱將自動加上 `_binned` 或對應欄位前綴，原始欄位將被移除。
     轉換後將依據原始 code.csv 更新 Type 資訊並自動產出 Codebook。
@@ -167,26 +167,7 @@ with tab2:
                     df2.drop(columns=[col], inplace=True)
                 except Exception as e:
                     st.warning(f"🔸 {col} 分箱失敗：{e}")
-            elif transform.lower().startswith("cut:quantile:"):
-                try:
-                    q = int(transform.split(":")[-1])
-                    new_col = col + "_binned"
-                    df2[new_col] = pd.qcut(df2[col], q=q, duplicates='drop', labels=False)
-                    column_types[new_col] = 2
-                    variable_names[new_col] = col
-                    df2.drop(columns=[col], inplace=True)
-                except Exception as e:
-                    st.warning(f"🔸 {col} 分位數切分失敗：{e}")
-            elif transform.lower().startswith("cut:uniform:"):
-                try:
-                    k = int(transform.split(":")[-1])
-                    new_col = col + "_binned"
-                    df2[new_col] = pd.cut(df2[col], bins=k, labels=False)
-                    column_types[new_col] = 2
-                    variable_names[new_col] = col
-                    df2.drop(columns=[col], inplace=True)
-                except Exception as e:
-                    st.warning(f"🔸 {col} 均分切分失敗：{e}")
+            
             elif df2[col].dtype == 'object' or transform.lower() == 'onehot':
                 try:
                     onehot = pd.get_dummies(df2[col], prefix=col, dtype=int)
