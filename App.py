@@ -208,7 +208,7 @@ with tab2:
             st.warning("⚠️ 以下欄位有遺失值：")
             st.dataframe(na_df)
             rows_after_na = df2.dropna(how='all').shape[0]
-            st.write(f"📦 刪除所有含遺失值的資料後，剩餘筆數為ˋ{rows_after_na}ˋ")
+            st.write(f"📦 刪除所有含遺失值的資料後，剩餘筆數為 {rows_after_na} 筆資料")
         # 🔎 變數類型統計
         st.subheader("📊 變數類型統計")
         type_count = pd.Series(column_types).value_counts().sort_index()
