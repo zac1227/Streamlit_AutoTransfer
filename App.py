@@ -135,6 +135,7 @@ with tab2:
     if df2 is not None and code2 is not None:
         st.success("✅ 資料與 code.csv 載入成功")
         transform_col = []
+        code2 = code2[~code2["Type"].astype(str).str.lower().eq("0")]
         for _, row in code2.iterrows():
             col = row["Column"]
             transform = str(row.get("Transform", "")).strip()
