@@ -205,12 +205,18 @@ with tab2:
 
         csv = df2.to_csv(index=False).encode('utf-8-sig')
         st.download_button("📥 下載轉換後的 CSV", data=csv, file_name="transformed_data.csv", mime="text/csv")
+        # ✅ 製作轉換後的 code_df
         code_df_transformed = pd.DataFrame({
-            "Column": list(column_types.keys()),
-            "Type": list(column_types.values())
+            "Column": list(variable_names.keys()),
+            "Type": [column_types[col] for col in variable_names.keys()]
         })
+
+        # ✅ 輸出轉換後的 code.csv
         code_df_transformed.to_csv("code_transformed.csv", index=False, encoding="utf-8-sig")
-        st.download_button("📥 下載轉換後的 code.csv", data=code_df_transformed.to_csv(index=False, encoding="utf-8-sig"), file_name="code_transformed.csv", mime="text/csv")
+
+        # ✅ 加入下載按鈕
+        csv_code = code_df_transformed.to_csv(index=False, encoding='utf-8-sig')
+        st.download_button("📥 下載轉換後的 code.csv", data=csv_code, file_name="code_transformed.csv", mime="text/csv")
         st.markdown("---")
         st.subheader("📘 自動產出 Codebook")
         if st.button("📄 產生報告（轉換後資料）"):
