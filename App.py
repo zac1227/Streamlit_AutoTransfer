@@ -97,12 +97,79 @@ with tab1:
                     st.error(f"❌ 產出失敗：{e}")
 
 # ---------- Tab 1 ----------
-with tab2:
-    st.title("📄")
-
-    # 上傳區塊、read_uploaded_csv、資料預覽等原始程式碼照貼這裡
-    ...
-    # 產出報告的邏輯也放這裡
-    ...
-
 # ---------- Tab 2 ----------
+with tab2:
+    st.title("📊 進階分析工具")
+    st.markdown("""
+    ### 📘 功能說明
+    本工具可根據 `code.csv` 中的 Transform 欄位，對主資料進行以下轉換：
+
+    - 若 Transform 欄為空或 'none'，則不進行任何轉換。
+    - 若為 `cut:[0,10,20,30]`，將以手動分箱方式進行區間分類（含邊界）。
+    - 若為 `cut:quantile:4`，則會進行四等分的分位數切分。
+    - 若為 `cut:uniform:3`，則會將資料等寬切為三段。
+    - 若欄位為類別型態，或 Transform 欄為 `onehot`，則會進行 one-hot encoding。
+
+    所有轉換後的欄位名稱將自動加上 `_binned` 或對應欄位前綴。
+    """)
+    def read_uploaded_csv(uploaded_file):
+        for enc in ["utf-8", "utf-8-sig", "cp950", "big5"]:
+            try:
+                return pd.read_csv(io.TextIOWrapper(uploaded_file, encoding=enc))
+            except Exception:
+                uploaded_file.seek(0)
+                continue
+        st.error("❌ 檔案無法讀取，請確認是否為有效的 CSV 並使用常見編碼（UTF-8、BIG5、CP950）")
+        return None
+
+    uploaded_main = st.file_uploader("📂 請上傳主資料（CSV）", type=["csv"], key="main2")
+    uploaded_code = st.file_uploader("📋 請上傳 code.csv（含 Transform 欄位）", type=["csv"], key="code2")
+
+    df2, code2 = None, None
+
+    if uploaded_main:
+        df2 = read_uploaded_csv(uploaded_main)
+    if uploaded_code:
+        code2 = read_uploaded_csv(uploaded_code)
+
+    if df2 is not None and code2 is not None:
+        st.success("✅ 資料與 code.csv 載入成功")
+        transform_col = []
+        for _, row in code2.iterrows():
+            col = row["Column"]
+            transform = str(row.get("Transform", "")).strip()
+            if transform.lower().startswith("cut:["):
+                try:
+                    bins = eval(transform[4:])
+                    df2[col + "_binned"] = pd.cut(df2[col], bins=bins, include_lowest=True)
+                except Exception as e:
+                    st.warning(f"🔸 {col} 分箱失敗：{e}")
+            elif transform.lower().startswith("cut:quantile:"):
+                try:
+                    q = int(transform.split(":")[-1])
+                    df2[col + "_binned"] = pd.qcut(df2[col], q=q, duplicates='drop')
+                except Exception as e:
+                    st.warning(f"🔸 {col} 分位數切分失敗：{e}")
+            elif transform.lower().startswith("cut:uniform:"):
+                try:
+                    k = int(transform.split(":")[-1])
+                    df2[col + "_binned"] = pd.cut(df2[col], bins=k)
+                except Exception as e:
+                    st.warning(f"🔸 {col} 均分切分失敗：{e}")
+            elif df2[col].dtype == 'object' or transform.lower() == 'onehot':
+                try:
+                    onehot = pd.get_dummies(df2[col], prefix=col)
+                    df2 = pd.concat([df2, onehot], axis=1)
+                except Exception as e:
+                    st.warning(f"🔸 {col} one-hot 編碼失敗：{e}")
+            elif transform == '' or transform.lower() == 'none':
+                continue
+            else:
+                st.warning(f"🔸 未知 Transform 指令：{transform}（欄位 {col}）")
+
+        st.markdown("---")
+        st.subheader("🔍 預覽轉換後資料")
+        st.dataframe(df2.head())
+
+        csv = df2.to_csv(index=False).encode('utf-8-sig')
+        st.download_button("📥 下載轉換後的 CSV", data=csv, file_name="transformed_data.csv", mime="text/csv")
