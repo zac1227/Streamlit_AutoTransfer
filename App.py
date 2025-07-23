@@ -106,9 +106,9 @@ with tab2:
     本工具可根據 `code.csv` 中的 Transform 欄位，對主資料進行以下轉換：
 
     - 若 Transform 欄為空或 'none'，則不進行任何轉換。
-    - 若為 `cut:[0,10,20,30]`，將以手動分箱方式進行區間分類，並自動編碼為 1, 2, 3, ...。
-    - 若為 `cut:quantile:4`，則會進行四等分的分位數切分。
-    - 若為 `cut:uniform:3`，則會將資料等寬切為三段。
+    - 若為 `cut:[0,10,20,30]`，將以手動分箱方式進行區間分類（含邊界），並轉換為 0,1,2,... 類別。
+    - 若為 `cut:quantile:4`，則會進行四等分的分位數切分，並轉換為 0,1,2,... 類別。
+    - 若為 `cut:uniform:3`，則會將資料等寬切為三段，並轉換為 0,1,2,... 類別。
     - 若欄位為類別型態，或 Transform 欄為 `onehot`，則會進行 one-hot encoding，並轉為 0/1。
 
     所有轉換後的欄位名稱將自動加上 `_binned` 或對應欄位前綴，原始欄位將被移除。
@@ -140,6 +140,7 @@ with tab2:
         # ✅ 移除 Type 為 0 的欄位
         code2 = code2[~code2["Type"].astype(str).str.lower().eq("0")]
 
+        transform_col = []
         for _, row in code2.iterrows():
             col = row["Column"]
             transform = str(row.get("Transform", "")).strip()
@@ -150,21 +151,21 @@ with tab2:
             if transform.lower().startswith("cut:["):
                 try:
                     bins = eval(transform[4:])
-                    df2[col + "_binned"] = pd.cut(df2[col], bins=bins, include_lowest=True, labels=False) + 1
+                    df2[col + "_binned"] = pd.cut(df2[col], bins=bins, include_lowest=True, labels=False)
                     df2.drop(columns=[col], inplace=True)
                 except Exception as e:
                     st.warning(f"🔸 {col} 分箱失敗：{e}")
             elif transform.lower().startswith("cut:quantile:"):
                 try:
                     q = int(transform.split(":")[-1])
-                    df2[col + "_binned"] = pd.qcut(df2[col], q=q, duplicates='drop', labels=False) + 1
+                    df2[col + "_binned"] = pd.qcut(df2[col], q=q, labels=False, duplicates='drop')
                     df2.drop(columns=[col], inplace=True)
                 except Exception as e:
                     st.warning(f"🔸 {col} 分位數切分失敗：{e}")
             elif transform.lower().startswith("cut:uniform:"):
                 try:
                     k = int(transform.split(":")[-1])
-                    df2[col + "_binned"] = pd.cut(df2[col], bins=k, labels=False) + 1
+                    df2[col + "_binned"] = pd.cut(df2[col], bins=k, labels=False)
                     df2.drop(columns=[col], inplace=True)
                 except Exception as e:
                     st.warning(f"🔸 {col} 均分切分失敗：{e}")
@@ -183,5 +184,6 @@ with tab2:
 
         csv = df2.to_csv(index=False).encode('utf-8-sig')
         st.download_button("📥 下載轉換後的 CSV", data=csv, file_name="transformed_data.csv", mime="text/csv")
+
 
 
