@@ -47,8 +47,8 @@ with tab1:
     st.subheader("📤 報告產出區")
 
     if df is not None and code_df is not None:
-        # 移除 Type 為 0 的欄位
-        code_df = code_df[code_df["Type"].astype(str) != "0"]
+    # 移除 Type 為 0 的欄位
+        code_df = code_df[~code_df["Type"].astype(str).str.lower().eq("0")]
 
         # 建立欄位型別與角色（X 或 Y）
         column_types = {}
@@ -61,18 +61,23 @@ with tab1:
             col = row["Column"]
             t = str(row["Type"]).lower()
 
-            if t in ["1", "2"]:
+            if t == "y1":
+                column_roles[col] = "Y"
+                column_types[col] = 1
+            elif t == "y2":
+                column_roles[col] = "Y"
+                column_types[col] = 2
+            elif t in ["1", "2"]:
                 column_roles[col] = f"X{x_counter}"
-                x_counter += 1
                 column_types[col] = int(t)
-            elif t in ["y1", "y2"]:
-                column_roles[col] = f"Y{y_counter}"
-                y_counter += 1
-                column_types[col] = 1 if t == "y1" else 2
+                x_counter += 1
             else:
                 st.warning(f"⚠️ Unknown Type '{t}' for column '{col}' — skipped.")
+                continue
 
             variable_names[col] = column_roles.get(col, col)
+
+                
         category_definitions = {}  # 若你之後想加對應定義，可放這裡
         if st.button("🚀 產出 Codebook 報告"):
             with st.spinner("📄 產出中，請稍候..."):
