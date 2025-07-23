@@ -106,6 +106,7 @@ with tab1:
             "欄位數": type_count.values
         })
         st.dataframe(type_summary)
+        st.markdown("---")
         st.subheader("📤 Codebook 報告產出")
         category_definitions = {}  # 可加入對應標籤
         if st.button("🚀 產出 Codebook 報告"):
