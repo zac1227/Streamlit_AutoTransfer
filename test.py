@@ -12,11 +12,10 @@ def generate_codebook(df, column_types, variable_names, category_definitions, co
     doc = Document()
     doc.add_heading("Codebook Summary Report", level=1)
 
-    
+    # 🔹 準備欄位列表
     code_df = code_df[~code_df["Type"].astype(str).str.lower().eq("0")]
-
-    # 🔹 插入：缺失值統計區塊
-    # 🔹 插入：缺失值統計區塊
+    
+    # 🔹 遺失值統計區塊
     doc.add_heading("Missing Value Summary", level=2)
     na_counts = df.isnull().sum()
     na_percent = df.isnull().mean() * 100
@@ -25,9 +24,7 @@ def generate_codebook(df, column_types, variable_names, category_definitions, co
         "Column": na_counts.index,
         "Missing Count": na_counts.values,
         "Missing Rate (%)": na_percent.round(2).values
-    })
-
-    na_df = na_df[na_df["Missing Count"] > 0].reset_index(drop=True)
+    }).query("`Missing Count` > 0").reset_index(drop=True)
 
     if not na_df.empty:
         table = doc.add_table(rows=1 + len(na_df), cols=3)
@@ -35,7 +32,6 @@ def generate_codebook(df, column_types, variable_names, category_definitions, co
         table.cell(0, 0).text = "Column"
         table.cell(0, 1).text = "Missing Count"
         table.cell(0, 2).text = "Missing Rate (%)"
-
         for i, row in na_df.iterrows():
             table.cell(i + 1, 0).text = str(row["Column"])
             table.cell(i + 1, 1).text = str(row["Missing Count"])
@@ -43,8 +39,24 @@ def generate_codebook(df, column_types, variable_names, category_definitions, co
     else:
         doc.add_paragraph("No missing values in any columns.")
 
-    df = df.dropna()  # Remove rows with all NaNs
+    # 🔹 變數類型統計區塊
+    doc.add_heading("Variable Type Summary", level=2)
+    type_count = pd.Series(column_types).value_counts().sort_index()
+    type_label_map = {1: "數值型 (Type 1)", 2: "類別型 (Type 2)"}
+
+    table = doc.add_table(rows=1 + len(type_count), cols=2)
+    table.style = "Table Grid"
+    table.cell(0, 0).text = "變數類型"
+    table.cell(0, 1).text = "欄位數"
+    for i, (type_code, count) in enumerate(type_count.items()):
+        label = type_label_map.get(type_code, f"其他 ({type_code})")
+        table.cell(i + 1, 0).text = label
+        table.cell(i + 1, 1).text = str(count)
+
+    # 🔹 開始處理欄位細節
+    df = df.dropna()  # ✅ 去除有缺失的 row
     columns = code_df["Column"] if code_df is not None else df.columns
+
     for col in columns:
         if col not in column_types:
             continue
@@ -55,59 +67,46 @@ def generate_codebook(df, column_types, variable_names, category_definitions, co
         var_name = variable_names.get(col, col)
         doc.add_heading(f"Variable: {col} ({var_name})", level=2)
 
-        # 🟦 Categorical Variable
+        # 🟦 類別型變數
         if type_code == 2:
-            value_counts = df[col].value_counts(dropna=False)
-            value_counts = value_counts.sort_index()  # ✅ 確保排序正確（照 label 排）
-
+            value_counts = df[col].value_counts(dropna=False).sort_index()
             total = len(df)
             defs = category_definitions.get(col, {})
-
-            lines = []
-            for k in value_counts.index:
-                count = value_counts[k]
-                percent = f"{count / total:.2%}"
-                label = defs.get(k, "")
-                lines.append(f"{k}: {label} → {count} ({percent})")
-
+            lines = [
+                f"{k}: {defs.get(k, '')} → {v} ({v/total:.2%})"
+                for k, v in value_counts.items()
+            ]
             summary_text = "\n".join(lines)
 
             table = doc.add_table(rows=2, cols=2)
             table.style = "Table Grid"
             table.cell(0, 0).text = "Variable Name"
             table.cell(0, 1).text = f"{col} ({var_name})"
-
             table.cell(1, 0).text = "Categories Summary"
             table.cell(1, 1).text = summary_text
 
-            # Bar chart
+            # 圖表
             fig, ax = plt.subplots()
             value_counts.plot(kind="bar", color="cornflowerblue", ax=ax)
             ax.set_title(f"Count Plot of {col}")
             tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
             plt.tight_layout()
             plt.savefig(tmp.name)
-            plt.close("all")
+            plt.close()
             doc.add_picture(tmp.name, width=Inches(4.5))
-            try:
-                os.unlink(tmp.name)
-            except PermissionError:
-                pass
+            try: os.unlink(tmp.name)
+            except PermissionError: pass
 
-        # 🟩 Continuous Variable
+        # 🟩 數值型變數
         elif type_code == 1:
             try:
                 df[col] = pd.to_numeric(df[col], errors="coerce")
-            except Exception as e:
-                print(f"❌ Failed to convert {col} to numeric: {e}")
+            except Exception:
                 continue
-
             if df[col].dropna().empty:
-                print(f"⚠️ Column {col} contains only NaN. Skipping.")
                 continue
 
             desc = df[col].describe()
-
             table = doc.add_table(rows=4, cols=4)
             table.style = "Table Grid"
             table.cell(0, 0).text = "Index"
@@ -137,12 +136,10 @@ def generate_codebook(df, column_types, variable_names, category_definitions, co
             tmp1 = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
             plt.tight_layout()
             plt.savefig(tmp1.name)
-            plt.close("all")
+            plt.close()
             doc.add_picture(tmp1.name, width=Inches(4.5))
-            try:
-                os.unlink(tmp1.name)
-            except PermissionError:
-                pass
+            try: os.unlink(tmp1.name)
+            except PermissionError: pass
 
             # Boxplot
             fig2, ax2 = plt.subplots()
@@ -151,12 +148,10 @@ def generate_codebook(df, column_types, variable_names, category_definitions, co
             tmp2 = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
             plt.tight_layout()
             plt.savefig(tmp2.name)
-            plt.close("all")
+            plt.close()
             doc.add_picture(tmp2.name, width=Inches(4.5))
-            try:
-                os.unlink(tmp2.name)
-            except PermissionError:
-                pass
+            try: os.unlink(tmp2.name)
+            except PermissionError: pass
 
     doc.save(output_path)
     return output_path
