@@ -51,9 +51,26 @@ with tab1:
         code_df = read_uploaded_csv(uploaded_codebook)
         if code_df is not None:
             st.success(f"✅ 成功讀取 Codebook，共定義 {len(code_df)} 欄位。")
+    
 
     # ---------- 🧠 資料處理 ----------
     st.markdown("---")
+    st.subheader("📉 遺失值統計")
+        na_counts = df.isnull().sum()
+        na_percent = df.isnull().mean() * 100
+        na_df = pd.DataFrame({
+            "欄位名稱": na_counts.index,
+            "遺失數": na_counts.values,
+            "遺失比例 (%)": na_percent.round(2).values
+        })
+        na_df = na_df[na_df["遺失數"] > 0].sort_values(by="遺失數", ascending=False)
+        if na_df.empty:
+            st.info("✅ 無遺失值")
+        else:
+            st.warning("⚠️ 以下欄位有遺失值：")
+            st.dataframe(na_df)
+            rows_after_na = df.dropna().shape[0]
+            st.write(f"📦 刪除所有含遺失值的資料後，剩餘筆數為 {rows_after_na} 筆資料")
     st.subheader("📤 報告產出區")
 
     if df is not None and code_df is not None:
