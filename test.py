@@ -16,6 +16,7 @@ def generate_codebook(df, column_types, variable_names, category_definitions, co
     code_df = code_df[~code_df["Type"].astype(str).str.lower().eq("0")]
 
     # 🔹 插入：缺失值統計區塊
+    # 🔹 插入：缺失值統計區塊
     doc.add_heading("Missing Value Summary", level=2)
     na_counts = df.isnull().sum()
     na_percent = df.isnull().mean() * 100
@@ -26,7 +27,7 @@ def generate_codebook(df, column_types, variable_names, category_definitions, co
         "Missing Rate (%)": na_percent.round(2).values
     })
 
-    na_df = na_df[na_df["Missing Count"] > 0]  # 只顯示有遺失值的欄位
+    na_df = na_df[na_df["Missing Count"] > 0].reset_index(drop=True)
 
     if not na_df.empty:
         table = doc.add_table(rows=1 + len(na_df), cols=3)
@@ -41,6 +42,7 @@ def generate_codebook(df, column_types, variable_names, category_definitions, co
             table.cell(i + 1, 2).text = str(row["Missing Rate (%)"])
     else:
         doc.add_paragraph("No missing values in any columns.")
+
 
     columns = code_df["Column"] if code_df is not None else df.columns
     for col in columns:
