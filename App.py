@@ -12,7 +12,7 @@ with tab1:
     st.title("📄 自動化 Codebook 產生工具")
     # ---------- 📥 上傳區塊 ----------
     st.set_page_config(page_title="Codebook 產生器", layout="wide")
-    st.title("📄 自動化 Codebook 產生工具")
+    
 
     def read_uploaded_csv(uploaded_file):
         for enc in ["utf-8", "utf-8-sig", "cp950", "big5"]:
