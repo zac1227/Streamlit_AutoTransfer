@@ -57,7 +57,7 @@ with tab1:
                 try:
                     output_path = "codebook.docx"  # 明確指定 Word 檔案名稱
                     output_path = generate_codebook(
-                        df, column_types, variable_names, category_definitions,code_df = code_df output_path=output_path
+                        df, column_types, variable_names, category_definitions,code_df=code_df output_path=output_path
                     )
                     with open(output_path, "rb") as f:
                         file_data = f.read()
